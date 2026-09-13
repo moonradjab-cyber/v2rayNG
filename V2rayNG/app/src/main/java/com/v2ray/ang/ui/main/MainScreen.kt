@@ -1,6 +1,9 @@
 package com.v2ray.ang.ui.main
 
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -188,12 +191,42 @@ fun MainScreen(
             floatingActionButton = {},
         ) { innerPadding ->
             val layoutDirection = LocalLayoutDirection.current
-            ConnectButton(
-                displayText = displayText,
-                isRunning = isRunning,
-                isDarkTheme = isDarkTheme,
-                onToggle = { onAction(MainAction.ToggleService) }
-            )
+
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(320.dp)
+                ) {
+                    ConnectButton(
+                        displayText = displayText,
+                        isRunning = isRunning,
+                        isDarkTheme = isDarkTheme,
+                        onToggle = { onAction(MainAction.ToggleService) }
+                    )
+                }
+
+                GroupPagerPage(
+                    groupId = uiState.selectedGroupId,
+                    mainViewModel = mainViewModel,
+                    selectedGuid = selectedGuid,
+                    locateTarget = uiState.locateTarget,
+                    doubleColumnDisplay = doubleColumnDisplay,
+                    searchQuery = searchQuery,
+                    lazyListStates = lazyListStates,
+                    lazyGridStates = lazyGridStates,
+                    onSelectServer = { guid -> onAction(MainAction.SelectServer(guid)) },
+                    onEditServer = { guid, profile -> onAction(MainAction.EditServer(guid, profile)) },
+                    onShareServer = { guid, profile -> shareTarget = Triple(guid, profile, false) },
+                    onMoreServer = { guid, profile -> shareTarget = Triple(guid, profile, true) },
+                    onRemoveServer = removeServer,
+                    contentPadding = PaddingValues(bottom = 80.dp)
+                )
+            }
 
             if (false) {
                 Column(
