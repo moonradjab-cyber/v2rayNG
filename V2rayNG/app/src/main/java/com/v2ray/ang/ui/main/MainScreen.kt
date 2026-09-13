@@ -188,6 +188,12 @@ fun MainScreen(
             floatingActionButton = {},
         ) { innerPadding ->
             val layoutDirection = LocalLayoutDirection.current
+            ConnectButton(
+                displayText = displayText,
+                isRunning = isRunning,
+                isDarkTheme = isDarkTheme,
+                onToggle = { onAction(MainAction.ToggleService) }
+            )
 
             if (groups.isNotEmpty()) {
                 Column(
