@@ -195,7 +195,7 @@ fun MainScreen(
                 onToggle = { onAction(MainAction.ToggleService) }
             )
 
-            if (groups.isNotEmpty()) {
+            if (false) {
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
