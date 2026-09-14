@@ -52,6 +52,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.v2ray.ang.R
 import com.v2ray.ang.dto.LocateTarget
 import com.v2ray.ang.dto.entities.ProfileItem
+import com.v2ray.ang.handler.MmkvManager
 import com.v2ray.ang.ui.compose.ItemDivider
 import com.v2ray.ang.ui.compose.ReorderableGridItem
 import com.v2ray.ang.ui.compose.ReorderableListItem
@@ -62,6 +63,7 @@ import com.v2ray.ang.ui.compose.verticalScrollbar
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyGridState
 import sh.calvin.reorderable.rememberReorderableLazyListState
+import org.json.JSONObject
 import kotlin.math.abs
 
 @Composable
@@ -317,6 +319,7 @@ private fun ServerListItem(
     } else {
         null
     }
+    val protoLabel = remember(row.guid) { parseProtocolLabel(row.guid) } ?: row.typeDescription
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -353,7 +356,7 @@ private fun ServerListItem(
                 color = MaterialTheme.colorScheme.onSurface
             )
             Text(
-                row.typeDescription,
+                protoLabel,
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,
@@ -381,6 +384,51 @@ private fun ServerListItem(
             )
         }
     }
+}
+
+private fun parseProtocolLabel(guid: String): String? {
+    val raw = MmkvManager.decodeServerRaw(guid) ?: return null
+    return try {
+        val json = JSONObject(raw)
+        val outbounds = json.optJSONArray("outbounds") ?: return null
+        val proxyProtocols = setOf(
+            "vless", "vmess", "trojan", "shadowsocks", "socks", "http", "wireguard", "hysteria2"
+        )
+        var chosen: JSONObject? = null
+        for (i in 0 until outbounds.length()) {
+            val ob = outbounds.optJSONObject(i) ?: continue
+            if (ob.optString("protocol").lowercase() in proxyProtocols) {
+                chosen = ob
+                break
+            }
+        }
+        val ob = chosen ?: return null
+        val parts = mutableListOf(ob.optString("protocol").uppercase())
+        val ss = ob.optJSONObject("streamSettings")
+        if (ss != null) {
+            val network = ss.optString("network")
+            if (network.isNotBlank() && !network.equals("tcp", ignoreCase = true)) {
+                parts.add(formatNetwork(network))
+            }
+            val security = ss.optString("security")
+            if (security.isNotBlank() && !security.equals("none", ignoreCase = true)) {
+                parts.add(security.uppercase())
+            }
+        }
+        if (parts.isEmpty()) null else parts.joinToString(" · ")
+    } catch (e: Exception) {
+        null
+    }
+}
+
+private fun formatNetwork(network: String): String = when (network.lowercase()) {
+    "grpc" -> "gRPC"
+    "ws" -> "WS"
+    "xhttp" -> "xHTTP"
+    "h2", "http" -> "H2"
+    "quic" -> "QUIC"
+    "kcp" -> "KCP"
+    else -> network.uppercase()
 }
 
 internal suspend fun PagerState.navigateToPageOptimized(

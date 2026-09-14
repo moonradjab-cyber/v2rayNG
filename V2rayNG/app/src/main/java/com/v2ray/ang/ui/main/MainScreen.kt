@@ -6,6 +6,7 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -55,6 +56,7 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -244,7 +246,7 @@ fun MainScreen(
                                 contentDescription = null
                             )
                         },
-                        label = { Text("Home") }
+                        label = { Text("Подключение") }
                     )
                     NavigationBarItem(
                         selected = selectedTab == HomeTab.Providers,
@@ -255,7 +257,7 @@ fun MainScreen(
                                 contentDescription = null
                             )
                         },
-                        label = { Text("Провайдеры") }
+                        label = { Text("Сервера") }
                     )
                     NavigationBarItem(
                         selected = selectedTab == HomeTab.Settings,
@@ -278,7 +280,17 @@ fun MainScreen(
             ) {
                 when (selectedTab) {
                     HomeTab.Home -> {
-                        Column(modifier = Modifier.fillMaxSize()) {
+                        Box(modifier = Modifier.fillMaxSize()) {
+                            Image(
+                                painter = painterResource(R.drawable.ic_bg_mountains),
+                                contentDescription = null,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .align(Alignment.BottomCenter),
+                                contentScale = ContentScale.FillWidth,
+                                alpha = 0.35f
+                            )
+                            Column(modifier = Modifier.fillMaxSize()) {
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -320,18 +332,12 @@ fun MainScreen(
                                 }
                             }
 
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(200.dp)
-                            ) {
-                                ConnectButton(
-                                    displayText = displayText,
-                                    isRunning = isRunning,
-                                    isDarkTheme = isDarkTheme,
-                                    onToggle = { onAction(MainAction.ToggleService) }
-                                )
-                            }
+                            ConnectButton(
+                                displayText = displayText,
+                                isRunning = isRunning,
+                                isDarkTheme = isDarkTheme,
+                                onToggle = { onAction(MainAction.ToggleService) }
+                            )
 
                             val currentGroup = serverGroups.getOrNull(pagerState.currentPage)
                             val renewUrl = currentGroup?.let { MmkvManager.decodeSubscription(it.id)?.url }
@@ -525,6 +531,7 @@ fun MainScreen(
                                     contentPadding = PaddingValues(bottom = 16.dp)
                                 )
                             }
+                        }
                         }
                     }
 
