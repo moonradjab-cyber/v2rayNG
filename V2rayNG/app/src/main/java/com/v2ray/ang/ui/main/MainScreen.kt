@@ -54,6 +54,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.v2ray.ang.R
 import com.v2ray.ang.dto.GroupMapItem
 import com.v2ray.ang.dto.entities.ProfileItem
+import com.v2ray.ang.handler.MmkvManager
 import com.v2ray.ang.ui.compose.LocalDarkTheme
 import com.v2ray.ang.ui.compose.QRCodeDialog
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -68,9 +69,15 @@ fun MainScreen(
     onNavigate: (MainDestination) -> Unit,
 ) {
     val uiState by mainViewModel.uiState.collectAsStateWithLifecycle()
-    // Empty "Default" group goes to the end so a group with servers opens first.
+    // Full list (empty "Default" pushed to the end) — used on the Providers tab.
     val orderedGroups = remember(uiState.groups) {
         uiState.groups.sortedBy { if (it.id.isEmpty()) 1 else 0 }
+    }
+    // Only groups that actually have servers — used for the Home tabs, so the
+    // empty "Default" group no longer shows up and blocks the real subscription.
+    val serverGroups = remember(uiState.groups) {
+        orderedGroups.filter { MmkvManager.decodeServerList(it.id).isNotEmpty() }
+            .ifEmpty { orderedGroups }
     }
     val isLoading by mainViewModel.isLoading.collectAsStateWithLifecycle()
     val isRunning = uiState.isRunning
@@ -99,28 +106,28 @@ fun MainScreen(
 
     val pagerState = rememberPagerState(
         initialPage = 0,
-        pageCount = { orderedGroups.size.coerceAtLeast(1) }
+        pageCount = { serverGroups.size.coerceAtLeast(1) }
     )
 
     val lazyListStates = remember { mutableStateMapOf<String, LazyListState>() }
     val lazyGridStates = remember { mutableStateMapOf<String, LazyGridState>() }
 
-    LaunchedEffect(orderedGroups) {
-        val validGroupIds = orderedGroups.map { it.id }.toSet()
+    LaunchedEffect(serverGroups) {
+        val validGroupIds = serverGroups.map { it.id }.toSet()
         lazyListStates.keys.retainAll(validGroupIds)
         lazyGridStates.keys.retainAll(validGroupIds)
     }
 
-    LaunchedEffect(orderedGroups, uiState.selectedGroupId) {
-        if (orderedGroups.isEmpty()) return@LaunchedEffect
-        val selectedIndex = orderedGroups.indexOfFirst { it.id == uiState.selectedGroupId }
+    LaunchedEffect(serverGroups, uiState.selectedGroupId) {
+        if (serverGroups.isEmpty()) return@LaunchedEffect
+        val selectedIndex = serverGroups.indexOfFirst { it.id == uiState.selectedGroupId }
             .takeIf { it >= 0 } ?: 0
         if (!pagerState.isScrollInProgress && pagerState.settledPage != selectedIndex) {
             pagerState.scrollToPage(selectedIndex)
         }
     }
 
-    val latestGroups by rememberUpdatedState(orderedGroups)
+    val latestGroups by rememberUpdatedState(serverGroups)
 
     LaunchedEffect(pagerState) {
         snapshotFlow { pagerState.settledPage }
@@ -271,10 +278,10 @@ fun MainScreen(
                                 )
                             }
 
-                            if (orderedGroups.size > 1) {
+                            if (serverGroups.size > 1) {
                                 GroupTabBar(
-                                    groups = orderedGroups,
-                                    selectedTabIndex = pagerState.currentPage.coerceIn(0, orderedGroups.lastIndex),
+                                    groups = serverGroups,
+                                    selectedTabIndex = pagerState.currentPage.coerceIn(0, serverGroups.lastIndex),
                                     mainViewModel = mainViewModel,
                                     onTabClick = { targetIndex ->
                                         scope.launch {
@@ -327,9 +334,9 @@ fun MainScreen(
                                     .fillMaxWidth(),
                                 userScrollEnabled = true,
                                 beyondViewportPageCount = 1,
-                                key = { page -> orderedGroups.getOrNull(page)?.id ?: "group-page-$page" }
+                                key = { page -> serverGroups.getOrNull(page)?.id ?: "group-page-$page" }
                             ) { page ->
-                                val group = orderedGroups.getOrNull(page) ?: return@HorizontalPager
+                                val group = serverGroups.getOrNull(page) ?: return@HorizontalPager
                                 GroupPagerPage(
                                     groupId = group.id,
                                     mainViewModel = mainViewModel,
@@ -352,7 +359,6 @@ fun MainScreen(
 
                     HomeTab.Providers -> ProvidersContent(
                         groups = orderedGroups,
-                        mainViewModel = mainViewModel,
                         onOpenGroup = { id ->
                             onAction(MainAction.SelectGroup(id))
                             selectedTab = HomeTab.Home
@@ -370,7 +376,6 @@ fun MainScreen(
 @Composable
 private fun ProvidersContent(
     groups: List<GroupMapItem>,
-    mainViewModel: MainViewModel,
     onOpenGroup: (String) -> Unit,
     onManage: () -> Unit,
 ) {
@@ -402,7 +407,7 @@ private fun ProvidersContent(
 
         LazyColumn(modifier = Modifier.fillMaxSize()) {
             items(groups) { group ->
-                val servers by mainViewModel.serversForGroup(group.id).collectAsStateWithLifecycle()
+                val count = MmkvManager.decodeServerList(group.id).size
                 Surface(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -428,7 +433,7 @@ private fun ProvidersContent(
                                 color = MaterialTheme.colorScheme.onSurface
                             )
                             Text(
-                                text = "${servers.size} серверов",
+                                text = "$count серверов",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
