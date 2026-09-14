@@ -25,6 +25,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -75,6 +76,7 @@ fun ConnectButton(
     val activeColor = colorFabActive
     val inactiveColor = if (isDarkTheme) colorFabInactiveDark else colorFabInactiveLight
     val ringColor = MaterialTheme.colorScheme.primary
+    val glowColor = if (isRunning) activeColor.copy(alpha = 0.55f) else ringColor.copy(alpha = 0.22f)
 
     Column(
         modifier = Modifier
@@ -83,9 +85,22 @@ fun ConnectButton(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Box(
-            modifier = Modifier.size(150.dp),
+            modifier = Modifier.size(190.dp),
             contentAlignment = Alignment.Center
         ) {
+            // Soft glow behind the button
+            Box(
+                modifier = Modifier
+                    .size(190.dp)
+                    .clip(CircleShape)
+                    .background(
+                        Brush.radialGradient(
+                            colors = listOf(glowColor, Color.Transparent)
+                        )
+                    )
+            )
+
+            // Expanding pulse (only when connected)
             if (isRunning) {
                 Box(
                     modifier = Modifier
@@ -97,6 +112,7 @@ fun ConnectButton(
                 )
             }
 
+            // Breathing ring
             Box(
                 modifier = Modifier
                     .size(132.dp)
@@ -105,6 +121,7 @@ fun ConnectButton(
                     .border(2.dp, ringColor, CircleShape)
             )
 
+            // Main button
             Box(
                 modifier = Modifier
                     .size(108.dp)

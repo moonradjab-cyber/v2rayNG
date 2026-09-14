@@ -8,10 +8,6 @@ import java.net.URL
 
 /**
  * Traffic / expiry / announce info parsed from the subscription response headers.
- * - used = upload + download, total, expire (epoch seconds; 0 = unlimited) come
- *   from the standard "Subscription-Userinfo" header.
- * - announce is the Remnawave "announce" header (base64), already filled with the
- *   user's real days left and ID by the panel; shown as-is.
  */
 data class SubInfo(
     val used: Long,
@@ -67,18 +63,38 @@ object SubInfoFetcher {
         }
     }
 
+    private fun isClean(text: String): Boolean =
+        text.isNotBlank() && !text.contains('\uFFFD')
+
     private fun decodeAnnounce(raw: String?): String? {
         if (raw.isNullOrBlank()) return null
         var s = raw.trim()
         if (s.startsWith("rwEncodeBase64:")) {
-            s = s.substring("rwEncodeBase64:".length).trim()
+            s = s.removePrefix("rwEncodeBase64:").trim()
         }
-        return try {
-            val bytes = Base64.decode(s, Base64.DEFAULT)
-            val text = String(bytes, Charsets.UTF_8).trim()
-            text.ifBlank { null }
+
+        // 1) Try base64 (standard, then URL-safe). Accept only clean UTF-8 text.
+        val cleaned = s.replace(Regex("\\s"), "")
+        for (flags in intArrayOf(Base64.DEFAULT, Base64.URL_SAFE)) {
+            val text = try {
+                String(Base64.decode(cleaned, flags or Base64.NO_WRAP), Charsets.UTF_8).trim()
+            } catch (e: Exception) {
+                ""
+            }
+            if (isClean(text)) return text
+        }
+
+        // 2) Maybe the header carried raw UTF-8 read as ISO-8859-1 — recover it.
+        val recovered = try {
+            String(raw.toByteArray(Charsets.ISO_8859_1), Charsets.UTF_8).trim()
         } catch (e: Exception) {
-            raw.trim().ifBlank { null }
+            ""
         }
+        if (isClean(recovered) && recovered != raw.trim()) {
+            return recovered.removePrefix("rwEncodeBase64:").trim()
+        }
+
+        // 3) Could not decode reliably — let the UI show its static fallback text.
+        return null
     }
 }

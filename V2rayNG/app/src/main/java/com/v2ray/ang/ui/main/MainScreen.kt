@@ -284,11 +284,9 @@ fun MainScreen(
                             Image(
                                 painter = painterResource(R.drawable.ic_bg_mountains),
                                 contentDescription = null,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .align(Alignment.BottomCenter),
-                                contentScale = ContentScale.FillWidth,
-                                alpha = 0.35f
+                                modifier = Modifier.fillMaxSize(),
+                                contentScale = ContentScale.FillBounds,
+                                alpha = 0.2f
                             )
                             Column(modifier = Modifier.fillMaxSize()) {
                             Row(
