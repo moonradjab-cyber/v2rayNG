@@ -64,52 +64,53 @@ private val LightColor = lightColorScheme(
     surfaceContainerHighest = Color(0xFFE5E5E5), // Light Gray
 )
 
+// Dark navy + light-blue palette (Maxachkala VPN, "friend" style)
 private val DarkColor = darkColorScheme(
-    primary = Color(0xFFC0C0C0), // Silver Gray
-    onPrimary = Color(0xFF303030), // Dark Gray
-    primaryContainer = Color(0xFF474747), // Gray
-    onPrimaryContainer = Color(0xFFE0E0E0), // Light Gray
-    secondary = Color(0xFFf97910), // Orange
-    onSecondary = Color(0xFF4E2600), // Dark Brown
-    secondaryContainer = Color(0xFF6F3800), // Brown
-    onSecondaryContainer = Color(0xFFFFE8D6), // Pale Orange
-    tertiary = Color(0xFF83D6B5), // Mint Green
-    onTertiary = Color(0xFF00382E), // Dark Teal
-    tertiaryContainer = Color(0xFF005143), // Teal
+    primary = Color(0xFF6FB3EC), // Light Blue
+    onPrimary = Color(0xFF06121F), // Very Dark Navy
+    primaryContainer = Color(0xFF1E3A5C), // Deep Blue
+    onPrimaryContainer = Color(0xFFCFE5FA), // Pale Blue
+    secondary = Color(0xFF6FB3EC), // Light Blue (accent)
+    onSecondary = Color(0xFF06121F), // Very Dark Navy
+    secondaryContainer = Color(0xFF22364F), // Blue-Gray (nav pill)
+    onSecondaryContainer = Color(0xFFCFE5FA), // Pale Blue
+    tertiary = Color(0xFF3DD68C), // Green
+    onTertiary = Color(0xFF00120A), // Very Dark Green
+    tertiaryContainer = Color(0xFF10362A), // Dark Green
     onTertiaryContainer = Color(0xFFA0F2D0), // Light Green
     error = Color(0xFFFFB4AB), // Light Red
     errorContainer = Color(0xFF93000A), // Dark Red
     onError = Color(0xFF690005), // Deep Red
     onErrorContainer = Color(0xFFFFDAD6), // Light Red
-    background = Color(0xFF1C1B1F), // Near Black
-    onBackground = Color(0xFFE6E1E5), // Light Gray
-    surface = Color(0xFF1C1B1F), // Near Black
-    onSurface = Color(0xFFE6E1E5), // Light Gray
-    surfaceVariant = Color(0xFF49454F), // Dark Gray
-    onSurfaceVariant = Color(0xFFCAC4D0), // Light Gray
-    outline = Color(0xFF938F99), // Grayish Purple
-    outlineVariant = Color(0xFF49454F), // Dark Gray
-    inverseSurface = Color(0xFFE6E1E5), // Light Gray
-    inverseOnSurface = Color(0xFF1C1B1F), // Near Black
-    inversePrimary = Color(0xFF000000), // Black
+    background = Color(0xFF0A0E18), // Near-Black Navy
+    onBackground = Color(0xFFE7ECF5), // Near White
+    surface = Color(0xFF0A0E18), // Near-Black Navy
+    onSurface = Color(0xFFE7ECF5), // Near White
+    surfaceVariant = Color(0xFF1A2333), // Dark Navy
+    onSurfaceVariant = Color(0xFF9AA7BF), // Muted Blue-Gray
+    outline = Color(0xFF2C3850), // Navy Gray
+    outlineVariant = Color(0xFF1C2536), // Dark Navy Gray
+    inverseSurface = Color(0xFFE7ECF5), // Near White
+    inverseOnSurface = Color(0xFF0A0E18), // Near-Black Navy
+    inversePrimary = Color(0xFF1E3A5C), // Deep Blue
     scrim = Color(0xFF000000), // Black
-    surfaceTint = Color(0xFFC0C0C0), // Silver Gray
-    surfaceContainerLowest = Color(0xFF0F0F12), // Near Black
-    surfaceContainerLow = Color(0xFF1A191D), // Dark Gray
-    surfaceContainer = Color(0xFF1E1D21), // Dark Gray
-    surfaceContainerHigh = Color(0xFF282729), // Dark Gray
-    surfaceContainerHighest = Color(0xFF333234), // Dark Gray
+    surfaceTint = Color(0xFF6FB3EC), // Light Blue
+    surfaceContainerLowest = Color(0xFF070A11), // Darkest Navy
+    surfaceContainerLow = Color(0xFF0F1522), // Dark Navy
+    surfaceContainer = Color(0xFF141B2B), // Card Navy
+    surfaceContainerHigh = Color(0xFF1B2436), // Lighter Card Navy
+    surfaceContainerHighest = Color(0xFF222D42), // Lightest Card Navy
 )
 
 // Semantic Colors
-val colorPing = Color(0xFF009966) // Green
-val colorPingRed = Color(0xFFFF0099) // Pink Red
-val colorConfigType = Color(0xFFf97910) // Orange
-val colorFabActive = Color(0xFFf97910) // Orange
-val colorFabInactiveLight = Color(0xFF9C9C9C) // Gray
-val colorFabInactiveDark = Color(0xFF646464) // Dark Gray
+val colorPing = Color(0xFF3DD68C) // Green
+val colorPingRed = Color(0xFFFF5C8A) // Pink Red
+val colorConfigType = Color(0xFF6FB3EC) // Light Blue
+val colorFabActive = Color(0xFF3E8EF0) // Bright Blue (connected)
+val colorFabInactiveLight = Color(0xFF1A2437) // Dark Navy (disconnected)
+val colorFabInactiveDark = Color(0xFF1A2437) // Dark Navy (disconnected)
 val dividerColorLight = Color(0xFFE0E0E0) // Light Gray
-val dividerColorDark = Color(0xFF424242) // Dark Gray
+val dividerColorDark = Color(0xFF202A3D) // Navy Divider
 
 // Toast Colors 70%
 val toastNormalBgLight = Color(0xB3353A3E) // Dark Gray
@@ -166,16 +167,9 @@ fun AppTheme(
     darkTheme: Boolean = resolveDarkTheme(),
     content: @Composable () -> Unit
 ) {
-    val dynamicColor by ThemeManager.dynamicColorEnabled.collectAsState()
-    val context = LocalContext.current
-    val colorScheme = when {
-        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-        }
-
-        darkTheme -> DarkColor
-        else -> LightColor
-    }
+    // Force the custom dark navy scheme everywhere (ignore Material You / light mode)
+    // so the look matches on every phone.
+    val colorScheme = DarkColor
     val snackbarController = rememberAppSnackbarController()
 
     val view = LocalView.current
@@ -184,14 +178,14 @@ fun AppTheme(
             val activity = view.context as? Activity ?: return@SideEffect
             val window = activity.window
             WindowCompat.getInsetsController(window, view).apply {
-                isAppearanceLightStatusBars = !darkTheme
-                isAppearanceLightNavigationBars = !darkTheme
+                isAppearanceLightStatusBars = false
+                isAppearanceLightNavigationBars = false
             }
         }
     }
 
     CompositionLocalProvider(
-        LocalDarkTheme provides darkTheme,
+        LocalDarkTheme provides true,
         LocalAppSnackbar provides snackbarController
     ) {
         MaterialTheme(

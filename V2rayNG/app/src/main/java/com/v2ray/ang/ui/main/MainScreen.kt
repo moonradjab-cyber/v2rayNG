@@ -1,20 +1,36 @@
 package com.v2ray.ang.ui.main
 
-import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.grid.LazyGridState
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.DrawerValue
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalNavigationDrawer
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.ScaffoldDefaults
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -26,15 +42,22 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.v2ray.ang.R
+import com.v2ray.ang.dto.GroupMapItem
 import com.v2ray.ang.dto.entities.ProfileItem
 import com.v2ray.ang.ui.compose.LocalDarkTheme
 import com.v2ray.ang.ui.compose.QRCodeDialog
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
+
+enum class HomeTab { Providers, Home, Settings }
 
 @Composable
 fun MainScreen(
@@ -61,6 +84,8 @@ fun MainScreen(
     var showDelDuplicateConfirm by remember { mutableStateOf(false) }
     var showDelInvalidConfirm by remember { mutableStateOf(false) }
     var showRemoveConfirm by remember { mutableStateOf<String?>(null) }
+
+    var selectedTab by remember { mutableStateOf(HomeTab.Home) }
 
     var shareTarget by remember { mutableStateOf<Triple<String, ProfileItem, Boolean>?>(null) }
     val removeServer: (String) -> Unit = { guid ->
@@ -148,143 +173,300 @@ fun MainScreen(
         Scaffold(
             contentWindowInsets = ScaffoldDefaults.contentWindowInsets,
             topBar = {
-                MainTopBar(
-                    isLoading = isLoading,
-                    showSearch = showSearch,
-                    searchQuery = searchQuery,
-                    onSearchQueryChange = { query: String ->
-                        searchQuery = query
-                        onAction(MainAction.Search(query))
-                    },
-                    onSearchClose = {
-                        searchQuery = ""
-                        onAction(MainAction.Search(""))
-                        showSearch = false
-                    },
-                    onSearchToggle = { show: Boolean -> showSearch = show },
-                    onMenuClick = { scope.launch { drawerState.open() } },
-                    onAction = onAction,
-                    onMoreMenuAction = { action ->
-                        when (action) {
-                            MainMoreMenuAction.RestartService -> onAction(MainAction.RestartService)
-                            MainMoreMenuAction.DeleteAll -> showDelAllConfirm = true
-                            MainMoreMenuAction.DeleteDuplicate -> showDelDuplicateConfirm = true
-                            MainMoreMenuAction.DeleteInvalid -> showDelInvalidConfirm = true
-                            MainMoreMenuAction.ExportAll -> onAction(MainAction.ExportAll)
-                            MainMoreMenuAction.LocateSelected -> onAction(MainAction.LocateSelectedServer)
-                            MainMoreMenuAction.SortByTestResults -> onAction(MainAction.SortByTestResults)
-                            MainMoreMenuAction.TestAll -> onAction(MainAction.TestAllServers)
-                            MainMoreMenuAction.TestAllRealPing -> onAction(MainAction.TestRealAllServers)
-                            MainMoreMenuAction.UpdateSubscriptions -> onAction(MainAction.UpdateSubscriptions)
+                if (selectedTab == HomeTab.Home) {
+                    MainTopBar(
+                        isLoading = isLoading,
+                        showSearch = showSearch,
+                        searchQuery = searchQuery,
+                        onSearchQueryChange = { query: String ->
+                            searchQuery = query
+                            onAction(MainAction.Search(query))
+                        },
+                        onSearchClose = {
+                            searchQuery = ""
+                            onAction(MainAction.Search(""))
+                            showSearch = false
+                        },
+                        onSearchToggle = { show: Boolean -> showSearch = show },
+                        onMenuClick = { scope.launch { drawerState.open() } },
+                        onAction = onAction,
+                        onMoreMenuAction = { action ->
+                            when (action) {
+                                MainMoreMenuAction.RestartService -> onAction(MainAction.RestartService)
+                                MainMoreMenuAction.DeleteAll -> showDelAllConfirm = true
+                                MainMoreMenuAction.DeleteDuplicate -> showDelDuplicateConfirm = true
+                                MainMoreMenuAction.DeleteInvalid -> showDelInvalidConfirm = true
+                                MainMoreMenuAction.ExportAll -> onAction(MainAction.ExportAll)
+                                MainMoreMenuAction.LocateSelected -> onAction(MainAction.LocateSelectedServer)
+                                MainMoreMenuAction.SortByTestResults -> onAction(MainAction.SortByTestResults)
+                                MainMoreMenuAction.TestAll -> onAction(MainAction.TestAllServers)
+                                MainMoreMenuAction.TestAllRealPing -> onAction(MainAction.TestRealAllServers)
+                                MainMoreMenuAction.UpdateSubscriptions -> onAction(MainAction.UpdateSubscriptions)
+                            }
                         }
-                    }
-                )
+                    )
+                }
             },
             bottomBar = {
-                MainBottomBar(
-                    displayText = displayText,
-                    isRunning = isRunning,
-                    isDarkTheme = isDarkTheme,
-                    onAction = onAction
-                )
+                NavigationBar {
+                    NavigationBarItem(
+                        selected = selectedTab == HomeTab.Providers,
+                        onClick = { selectedTab = HomeTab.Providers },
+                        icon = {
+                            Icon(
+                                painterResource(R.drawable.ic_subscriptions_24dp),
+                                contentDescription = null
+                            )
+                        },
+                        label = { Text("Провайдеры") }
+                    )
+                    NavigationBarItem(
+                        selected = selectedTab == HomeTab.Home,
+                        onClick = { selectedTab = HomeTab.Home },
+                        icon = {
+                            Icon(
+                                painterResource(R.drawable.ic_play_24dp),
+                                contentDescription = null
+                            )
+                        },
+                        label = { Text("Home") }
+                    )
+                    NavigationBarItem(
+                        selected = selectedTab == HomeTab.Settings,
+                        onClick = { selectedTab = HomeTab.Settings },
+                        icon = {
+                            Icon(
+                                painterResource(R.drawable.ic_settings_24dp),
+                                contentDescription = null
+                            )
+                        },
+                        label = { Text("Настройки") }
+                    )
+                }
             },
-            floatingActionButton = {},
         ) { innerPadding ->
-            val layoutDirection = LocalLayoutDirection.current
-
-            Column(
+            Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(innerPadding)
             ) {
-                Box(
+                when (selectedTab) {
+                    HomeTab.Home -> {
+                        Column(modifier = Modifier.fillMaxSize()) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(320.dp)
+                            ) {
+                                ConnectButton(
+                                    displayText = displayText,
+                                    isRunning = isRunning,
+                                    isDarkTheme = isDarkTheme,
+                                    onToggle = { onAction(MainAction.ToggleService) }
+                                )
+                            }
+
+                            if (groups.size > 1) {
+                                GroupTabBar(
+                                    groups = groups,
+                                    selectedTabIndex = pagerState.currentPage.coerceIn(0, groups.lastIndex),
+                                    mainViewModel = mainViewModel,
+                                    onTabClick = { targetIndex ->
+                                        scope.launch {
+                                            pagerState.navigateToPageOptimized(
+                                                targetPage = targetIndex,
+                                                animateAdjacentPage = true
+                                            )
+                                        }
+                                    }
+                                )
+                            }
+
+                            HorizontalPager(
+                                state = pagerState,
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .fillMaxWidth(),
+                                userScrollEnabled = true,
+                                beyondViewportPageCount = 1,
+                                key = { page -> groups.getOrNull(page)?.id ?: "group-page-$page" }
+                            ) { page ->
+                                val group = groups.getOrNull(page) ?: return@HorizontalPager
+                                GroupPagerPage(
+                                    groupId = group.id,
+                                    mainViewModel = mainViewModel,
+                                    selectedGuid = selectedGuid,
+                                    locateTarget = uiState.locateTarget,
+                                    doubleColumnDisplay = doubleColumnDisplay,
+                                    searchQuery = searchQuery,
+                                    lazyListStates = lazyListStates,
+                                    lazyGridStates = lazyGridStates,
+                                    onSelectServer = { guid -> onAction(MainAction.SelectServer(guid)) },
+                                    onEditServer = { guid, profile -> onAction(MainAction.EditServer(guid, profile)) },
+                                    onShareServer = { guid, profile -> shareTarget = Triple(guid, profile, false) },
+                                    onMoreServer = { guid, profile -> shareTarget = Triple(guid, profile, true) },
+                                    onRemoveServer = removeServer,
+                                    contentPadding = PaddingValues(bottom = 16.dp)
+                                )
+                            }
+                        }
+                    }
+
+                    HomeTab.Providers -> ProvidersContent(
+                        groups = groups,
+                        onOpenGroup = { id ->
+                            onAction(MainAction.SelectGroup(id))
+                            selectedTab = HomeTab.Home
+                        },
+                        onManage = { onNavigate(MainDestination.Subscriptions) }
+                    )
+
+                    HomeTab.Settings -> SettingsContent(onNavigate = onNavigate)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ProvidersContent(
+    groups: List<GroupMapItem>,
+    onOpenGroup: (String) -> Unit,
+    onManage: () -> Unit,
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "Провайдеры",
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onBackground,
+                modifier = Modifier.weight(1f)
+            )
+            Icon(
+                painter = painterResource(R.drawable.ic_add_24dp),
+                contentDescription = "Добавить",
+                tint = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.clickable { onManage() }
+            )
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        LazyColumn(modifier = Modifier.fillMaxSize()) {
+            items(groups) { group ->
+                Surface(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(320.dp)
+                        .padding(vertical = 6.dp)
+                        .clickable { onOpenGroup(group.id) },
+                    shape = RoundedCornerShape(16.dp),
+                    color = MaterialTheme.colorScheme.surfaceContainer
                 ) {
-                    ConnectButton(
-                        displayText = displayText,
-                        isRunning = isRunning,
-                        isDarkTheme = isDarkTheme,
-                        onToggle = { onAction(MainAction.ToggleService) }
+                    Row(
+                        modifier = Modifier.padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_subscriptions_24dp),
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.secondary
+                        )
+                        Spacer(modifier = Modifier.width(16.dp))
+                        Text(
+                            text = if (group.id.isEmpty()) "Default" else group.remarks,
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.weight(1f)
+                        )
+                        Icon(
+                            painter = painterResource(R.drawable.ic_settings_24dp),
+                            contentDescription = "Настроить",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.clickable { onManage() }
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+private val settingsGroup1 = listOf(
+    MainDestination.PerAppProxy,
+    MainDestination.Routing,
+    MainDestination.UserAssets,
+    MainDestination.Settings,
+)
+
+private val settingsGroup2 = listOf(
+    MainDestination.Logcat,
+    MainDestination.BackupRestore,
+    MainDestination.CheckUpdate,
+    MainDestination.About,
+)
+
+@Composable
+private fun SettingsContent(onNavigate: (MainDestination) -> Unit) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(16.dp)
+    ) {
+        Text(
+            text = "Настройки",
+            style = MaterialTheme.typography.headlineMedium,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onBackground
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+        SettingsCard(items = settingsGroup1, onNavigate = onNavigate)
+        Spacer(modifier = Modifier.height(16.dp))
+        SettingsCard(items = settingsGroup2, onNavigate = onNavigate)
+    }
+}
+
+@Composable
+private fun SettingsCard(
+    items: List<MainDestination>,
+    onNavigate: (MainDestination) -> Unit,
+) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        color = MaterialTheme.colorScheme.surfaceContainer
+    ) {
+        Column {
+            items.forEachIndexed { index, item ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onNavigate(item) }
+                        .padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        painter = painterResource(item.iconRes),
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.secondary
+                    )
+                    Spacer(modifier = Modifier.width(16.dp))
+                    Text(
+                        text = stringResource(item.labelRes),
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                 }
-
-                GroupPagerPage(
-                    groupId = uiState.selectedGroupId,
-                    mainViewModel = mainViewModel,
-                    selectedGuid = selectedGuid,
-                    locateTarget = uiState.locateTarget,
-                    doubleColumnDisplay = doubleColumnDisplay,
-                    searchQuery = searchQuery,
-                    lazyListStates = lazyListStates,
-                    lazyGridStates = lazyGridStates,
-                    onSelectServer = { guid -> onAction(MainAction.SelectServer(guid)) },
-                    onEditServer = { guid, profile -> onAction(MainAction.EditServer(guid, profile)) },
-                    onShareServer = { guid, profile -> shareTarget = Triple(guid, profile, false) },
-                    onMoreServer = { guid, profile -> shareTarget = Triple(guid, profile, true) },
-                    onRemoveServer = removeServer,
-                    contentPadding = PaddingValues(bottom = 80.dp)
-                )
-            }
-
-            if (false) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(innerPadding)
-                ) {
-                    if (groups.size > 1) {
-                        GroupTabBar(
-                            groups = groups,
-                            selectedTabIndex = pagerState.currentPage.coerceIn(0, groups.lastIndex),
-                            mainViewModel = mainViewModel,
-                            onTabClick = { targetIndex ->
-                                scope.launch {
-                                    pagerState.navigateToPageOptimized(
-                                        targetPage = targetIndex,
-                                        animateAdjacentPage = true
-                                    )
-                                }
-                            }
-                        )
-                    }
-
-                    HorizontalPager(
-                        state = pagerState,
-                        modifier = Modifier.fillMaxSize(),
-                        userScrollEnabled = true,
-                        beyondViewportPageCount = 1,
-                        key = { page -> groups.getOrNull(page)?.id ?: "group-page-$page" }
-                    ) { page ->
-                        val group = groups.getOrNull(page) ?: return@HorizontalPager
-
-                        GroupPagerPage(
-                            groupId = group.id,
-                            mainViewModel = mainViewModel,
-                            selectedGuid = selectedGuid,
-                            locateTarget = uiState.locateTarget,
-                            doubleColumnDisplay = doubleColumnDisplay,
-                            searchQuery = searchQuery,
-                            lazyListStates = lazyListStates,
-                            lazyGridStates = lazyGridStates,
-                            onSelectServer = { guid -> onAction(MainAction.SelectServer(guid)) },
-                            onEditServer = { guid, profile -> onAction(MainAction.EditServer(guid, profile)) },
-                            onShareServer = { guid, profile ->
-                                shareTarget = Triple(guid, profile, false)
-                            },
-                            onMoreServer = { guid, profile ->
-                                shareTarget = Triple(guid, profile, true)
-                            },
-                            onRemoveServer = removeServer,
-                            contentPadding = PaddingValues(
-                                start = 0.dp,
-                                top = 0.dp,
-                                end = 0.dp,
-                                bottom = 80.dp
-                            )
-                        )
-                    }
+                if (index < items.lastIndex) {
+                    HorizontalDivider(modifier = Modifier.padding(start = 56.dp))
                 }
             }
         }
