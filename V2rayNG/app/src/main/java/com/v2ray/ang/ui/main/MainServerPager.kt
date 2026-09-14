@@ -356,11 +356,11 @@ private fun ServerListItem(
             )
         }
 
-        if (testResult.isNotEmpty()) {
+        if (row.testDelayMillis > 0L) {
             Text(
                 testResult,
                 style = MaterialTheme.typography.bodySmall,
-                color = if (row.testDelayMillis < 0L) colorPingRed else colorPing,
+                color = colorPing,
                 maxLines = 1
             )
         }

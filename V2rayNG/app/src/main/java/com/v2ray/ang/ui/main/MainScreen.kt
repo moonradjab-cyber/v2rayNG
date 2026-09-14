@@ -396,7 +396,7 @@ fun MainScreen(
                                 )
                                 Row(
                                     modifier = Modifier
-                                        .clickable { onAction(MainAction.TestAllServers) }
+                                        .clickable { onAction(MainAction.TestRealAllServers) }
                                         .padding(8.dp),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
@@ -489,6 +489,35 @@ private fun ProvidersContent(
                 tint = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.clickable { onManage() }
             )
+        }
+
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 12.dp)
+                .clickable { onManage() },
+            shape = RoundedCornerShape(12.dp),
+            color = MaterialTheme.colorScheme.secondaryContainer
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 12.dp),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.ic_add_24dp),
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSecondaryContainer
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "Добавить подписку",
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.onSecondaryContainer
+                )
+            }
         }
 
         Spacer(modifier = Modifier.height(16.dp))
