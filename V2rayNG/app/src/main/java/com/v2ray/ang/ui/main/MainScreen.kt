@@ -442,6 +442,15 @@ fun MainScreen(
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     modifier = Modifier.weight(1f)
                                 )
+                                Icon(
+                                    painterResource(R.drawable.ic_refresh_24dp),
+                                    contentDescription = "Обновить",
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier
+                                        .clickable { onAction(MainAction.UpdateSubscriptions) }
+                                        .padding(8.dp)
+                                        .size(20.dp)
+                                )
                                 Row(
                                     modifier = Modifier
                                         .clickable { onAction(MainAction.TestRealAllServers) }
@@ -570,8 +579,9 @@ private fun ProvidersContent(
 
         Spacer(modifier = Modifier.height(16.dp))
 
+        val shownGroups = groups.filter { MmkvManager.decodeServerList(it.id).isNotEmpty() }
         LazyColumn(modifier = Modifier.fillMaxSize()) {
-            items(groups) { group ->
+            items(shownGroups) { group ->
                 val count = MmkvManager.decodeServerList(group.id).size
                 Surface(
                     modifier = Modifier
