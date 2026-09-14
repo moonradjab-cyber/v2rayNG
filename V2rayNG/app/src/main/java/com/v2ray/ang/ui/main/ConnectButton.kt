@@ -20,7 +20,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.v2ray.ang.R
 import com.v2ray.ang.ui.compose.colorFabActive
 import com.v2ray.ang.ui.compose.colorFabInactiveDark
@@ -40,7 +39,7 @@ fun ConnectButton(
     ) {
         Box(
             modifier = Modifier
-                .size(180.dp)
+                .size(120.dp)
                 .clip(CircleShape)
                 .background(
                     if (isRunning) colorFabActive
@@ -57,15 +56,15 @@ fun ConnectButton(
                     if (isRunning) R.string.acc_stop else R.string.acc_start
                 ),
                 tint = Color.White,
-                modifier = Modifier.size(72.dp)
+                modifier = Modifier.size(48.dp)
             )
         }
 
         Text(
             text = displayText,
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.padding(top = 32.dp)
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(top = 16.dp)
         )
     }
 }

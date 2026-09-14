@@ -1,6 +1,7 @@
 package com.v2ray.ang.ui.main
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -10,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
@@ -57,7 +59,7 @@ import com.v2ray.ang.ui.compose.QRCodeDialog
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 
-enum class HomeTab { Providers, Home, Settings }
+enum class HomeTab { Home, Providers, Settings }
 
 @Composable
 fun MainScreen(
@@ -66,7 +68,10 @@ fun MainScreen(
     onNavigate: (MainDestination) -> Unit,
 ) {
     val uiState by mainViewModel.uiState.collectAsStateWithLifecycle()
-    val groups = uiState.groups
+    // Empty "Default" group goes to the end so a group with servers opens first.
+    val orderedGroups = remember(uiState.groups) {
+        uiState.groups.sortedBy { if (it.id.isEmpty()) 1 else 0 }
+    }
     val isLoading by mainViewModel.isLoading.collectAsStateWithLifecycle()
     val isRunning = uiState.isRunning
     val displayText = mainViewModel.formatStatus(uiState.status)
@@ -94,28 +99,28 @@ fun MainScreen(
 
     val pagerState = rememberPagerState(
         initialPage = 0,
-        pageCount = { groups.size.coerceAtLeast(1) }
+        pageCount = { orderedGroups.size.coerceAtLeast(1) }
     )
 
     val lazyListStates = remember { mutableStateMapOf<String, LazyListState>() }
     val lazyGridStates = remember { mutableStateMapOf<String, LazyGridState>() }
 
-    LaunchedEffect(groups) {
-        val validGroupIds = groups.map { it.id }.toSet()
+    LaunchedEffect(orderedGroups) {
+        val validGroupIds = orderedGroups.map { it.id }.toSet()
         lazyListStates.keys.retainAll(validGroupIds)
         lazyGridStates.keys.retainAll(validGroupIds)
     }
 
-    LaunchedEffect(groups, uiState.selectedGroupId) {
-        if (groups.isEmpty()) return@LaunchedEffect
-        val selectedIndex = groups.indexOfFirst { it.id == uiState.selectedGroupId }
+    LaunchedEffect(orderedGroups, uiState.selectedGroupId) {
+        if (orderedGroups.isEmpty()) return@LaunchedEffect
+        val selectedIndex = orderedGroups.indexOfFirst { it.id == uiState.selectedGroupId }
             .takeIf { it >= 0 } ?: 0
         if (!pagerState.isScrollInProgress && pagerState.settledPage != selectedIndex) {
             pagerState.scrollToPage(selectedIndex)
         }
     }
 
-    val latestGroups by rememberUpdatedState(groups)
+    val latestGroups by rememberUpdatedState(orderedGroups)
 
     LaunchedEffect(pagerState) {
         snapshotFlow { pagerState.settledPage }
@@ -210,6 +215,17 @@ fun MainScreen(
             bottomBar = {
                 NavigationBar {
                     NavigationBarItem(
+                        selected = selectedTab == HomeTab.Home,
+                        onClick = { selectedTab = HomeTab.Home },
+                        icon = {
+                            Icon(
+                                painterResource(R.drawable.ic_shield_24dp),
+                                contentDescription = null
+                            )
+                        },
+                        label = { Text("Home") }
+                    )
+                    NavigationBarItem(
                         selected = selectedTab == HomeTab.Providers,
                         onClick = { selectedTab = HomeTab.Providers },
                         icon = {
@@ -219,17 +235,6 @@ fun MainScreen(
                             )
                         },
                         label = { Text("Провайдеры") }
-                    )
-                    NavigationBarItem(
-                        selected = selectedTab == HomeTab.Home,
-                        onClick = { selectedTab = HomeTab.Home },
-                        icon = {
-                            Icon(
-                                painterResource(R.drawable.ic_play_24dp),
-                                contentDescription = null
-                            )
-                        },
-                        label = { Text("Home") }
                     )
                     NavigationBarItem(
                         selected = selectedTab == HomeTab.Settings,
@@ -256,7 +261,7 @@ fun MainScreen(
                             Box(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .height(320.dp)
+                                    .height(200.dp)
                             ) {
                                 ConnectButton(
                                     displayText = displayText,
@@ -266,10 +271,10 @@ fun MainScreen(
                                 )
                             }
 
-                            if (groups.size > 1) {
+                            if (orderedGroups.size > 1) {
                                 GroupTabBar(
-                                    groups = groups,
-                                    selectedTabIndex = pagerState.currentPage.coerceIn(0, groups.lastIndex),
+                                    groups = orderedGroups,
+                                    selectedTabIndex = pagerState.currentPage.coerceIn(0, orderedGroups.lastIndex),
                                     mainViewModel = mainViewModel,
                                     onTabClick = { targetIndex ->
                                         scope.launch {
@@ -282,6 +287,39 @@ fun MainScreen(
                                 )
                             }
 
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(start = 16.dp, end = 12.dp, top = 8.dp, bottom = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = "Серверы",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.weight(1f)
+                                )
+                                Row(
+                                    modifier = Modifier
+                                        .clickable { onAction(MainAction.TestAllServers) }
+                                        .padding(8.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(
+                                        painterResource(R.drawable.ic_flash_on_24dp),
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text(
+                                        text = "Проверить все",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
+                                }
+                            }
+
                             HorizontalPager(
                                 state = pagerState,
                                 modifier = Modifier
@@ -289,9 +327,9 @@ fun MainScreen(
                                     .fillMaxWidth(),
                                 userScrollEnabled = true,
                                 beyondViewportPageCount = 1,
-                                key = { page -> groups.getOrNull(page)?.id ?: "group-page-$page" }
+                                key = { page -> orderedGroups.getOrNull(page)?.id ?: "group-page-$page" }
                             ) { page ->
-                                val group = groups.getOrNull(page) ?: return@HorizontalPager
+                                val group = orderedGroups.getOrNull(page) ?: return@HorizontalPager
                                 GroupPagerPage(
                                     groupId = group.id,
                                     mainViewModel = mainViewModel,
@@ -313,7 +351,8 @@ fun MainScreen(
                     }
 
                     HomeTab.Providers -> ProvidersContent(
-                        groups = groups,
+                        groups = orderedGroups,
+                        mainViewModel = mainViewModel,
                         onOpenGroup = { id ->
                             onAction(MainAction.SelectGroup(id))
                             selectedTab = HomeTab.Home
@@ -331,6 +370,7 @@ fun MainScreen(
 @Composable
 private fun ProvidersContent(
     groups: List<GroupMapItem>,
+    mainViewModel: MainViewModel,
     onOpenGroup: (String) -> Unit,
     onManage: () -> Unit,
 ) {
@@ -362,6 +402,7 @@ private fun ProvidersContent(
 
         LazyColumn(modifier = Modifier.fillMaxSize()) {
             items(groups) { group ->
+                val servers by mainViewModel.serversForGroup(group.id).collectAsStateWithLifecycle()
                 Surface(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -380,12 +421,18 @@ private fun ProvidersContent(
                             tint = MaterialTheme.colorScheme.secondary
                         )
                         Spacer(modifier = Modifier.width(16.dp))
-                        Text(
-                            text = if (group.id.isEmpty()) "Default" else group.remarks,
-                            style = MaterialTheme.typography.titleMedium,
-                            color = MaterialTheme.colorScheme.onSurface,
-                            modifier = Modifier.weight(1f)
-                        )
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = if (group.id.isEmpty()) "Default" else group.remarks,
+                                style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Text(
+                                text = "${servers.size} серверов",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                         Icon(
                             painter = painterResource(R.drawable.ic_settings_24dp),
                             contentDescription = "Настроить",
