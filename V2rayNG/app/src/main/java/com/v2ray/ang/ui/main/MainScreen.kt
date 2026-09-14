@@ -1,5 +1,11 @@
 package com.v2ray.ang.ui.main
 
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -49,6 +55,7 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -332,6 +339,16 @@ fun MainScreen(
                                 val subInfo by produceState<SubInfo?>(initialValue = null, key1 = renewUrl) {
                                     value = SubInfoFetcher.fetch(renewUrl)
                                 }
+                                val renewTransition = rememberInfiniteTransition(label = "renew")
+                                val renewPulse by renewTransition.animateFloat(
+                                    initialValue = 1f,
+                                    targetValue = 1.06f,
+                                    animationSpec = infiniteRepeatable(
+                                        animation = tween(900, easing = FastOutSlowInEasing),
+                                        repeatMode = RepeatMode.Reverse
+                                    ),
+                                    label = "renewPulse"
+                                )
                                 Surface(
                                     modifier = Modifier
                                         .fillMaxWidth()
@@ -352,7 +369,7 @@ fun MainScreen(
                                             Surface(
                                                 shape = RoundedCornerShape(99.dp),
                                                 color = MaterialTheme.colorScheme.secondaryContainer,
-                                                modifier = Modifier.clickable {
+                                                modifier = Modifier.scale(renewPulse).clickable {
                                                     runCatching {
                                                         context.startActivity(
                                                             Intent(Intent.ACTION_VIEW, Uri.parse(renewUrl))
@@ -409,6 +426,15 @@ fun MainScreen(
                                                 )
                                             }
                                         }
+
+                                        val announce = subInfo?.announce
+                                        Spacer(modifier = Modifier.height(10.dp))
+                                        Text(
+                                            text = if (!announce.isNullOrBlank()) announce
+                                            else "Чтобы продлить подписку — нажмите «Продлить» выше. Откроется страница оплаты со всеми тарифами.",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
                                     }
                                 }
                                 Spacer(modifier = Modifier.height(8.dp))
