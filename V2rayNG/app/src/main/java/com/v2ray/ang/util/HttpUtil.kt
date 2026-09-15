@@ -4,6 +4,7 @@ import com.v2ray.ang.AppConfig
 import com.v2ray.ang.AppConfig.LOOPBACK
 import com.v2ray.ang.BuildConfig
 import com.v2ray.ang.dto.UrlContentRequest
+import com.v2ray.ang.handler.MmkvManager
 import okhttp3.Credentials
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -148,6 +149,14 @@ object HttpUtil {
         var redirects = 0
         val maxRedirects = 3
 
+        // Stable per-device ID for Remnawave "HWID Device Limit" — panels return an
+        // "App not supported" placeholder instead of the real servers without it.
+        var deviceHwid = MmkvManager.decodeSettingsString("device_hwid") ?: ""
+        if (deviceHwid.isBlank()) {
+            deviceHwid = java.util.UUID.randomUUID().toString()
+            MmkvManager.encodeSettings("device_hwid", deviceHwid)
+        }
+
         while (redirects++ < maxRedirects) {
             if (currentUrl == null) continue
             val client = buildOkHttpClient(request.timeout, request.httpPort, request.proxyUsername, request.proxyPassword, followRedirects = false)
@@ -161,6 +170,10 @@ object HttpUtil {
                 .get()
                 .header("User-agent", finalUserAgent)
                 .header("Connection", "close")
+                .header("x-hwid", deviceHwid)
+                .header("x-device-os", "Android")
+                .header("x-ver-os", android.os.Build.VERSION.RELEASE ?: "")
+                .header("x-device-model", android.os.Build.MODEL ?: "")
 
             applyEmbeddedBasicAuthHeader(currentUrl, requestBuilder)
 
