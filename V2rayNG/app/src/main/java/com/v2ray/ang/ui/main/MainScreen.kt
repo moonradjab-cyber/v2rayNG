@@ -58,6 +58,8 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.res.painterResource
@@ -286,26 +288,39 @@ fun MainScreen(
             ) {
                 when (selectedTab) {
                     HomeTab.Home -> {
-                        Box(modifier = Modifier.fillMaxSize()) {
-                            val bgTransition = rememberInfiniteTransition(label = "bg")
-                            val bgDrift by bgTransition.animateFloat(
-                                initialValue = -10f,
-                                targetValue = 10f,
-                                animationSpec = infiniteRepeatable(
-                                    animation = tween(9000, easing = LinearEasing),
-                                    repeatMode = RepeatMode.Reverse
-                                ),
-                                label = "bgDrift"
-                            )
-                            Image(
-                                painter = painterResource(R.drawable.ic_bg_mountains),
-                                contentDescription = null,
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(
+                                    Brush.verticalGradient(
+                                        listOf(
+                                            Color(0xFF1A1636),
+                                            Color(0xFF141029),
+                                            Color(0xFF0A0814)
+                                        )
+                                    )
+                                )
+                        ) {
+                            Box(
                                 modifier = Modifier
-                                    .fillMaxSize()
-                                    .scale(1.15f)
-                                    .offset(x = bgDrift.dp),
-                                contentScale = ContentScale.FillBounds,
-                                alpha = 0.32f
+                                    .size(300.dp)
+                                    .offset(x = (-40).dp, y = (-70).dp)
+                                    .background(
+                                        Brush.radialGradient(
+                                            listOf(Color(0x557C5CF5), Color(0x00000000))
+                                        )
+                                    )
+                            )
+                            Box(
+                                modifier = Modifier
+                                    .size(240.dp)
+                                    .align(Alignment.TopEnd)
+                                    .offset(x = 60.dp, y = 10.dp)
+                                    .background(
+                                        Brush.radialGradient(
+                                            listOf(Color(0x44506EF0), Color(0x00000000))
+                                        )
+                                    )
                             )
                             Column(modifier = Modifier.fillMaxSize()) {
                             Row(
