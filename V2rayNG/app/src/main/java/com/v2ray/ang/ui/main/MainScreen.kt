@@ -41,6 +41,7 @@ import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.ScaffoldDefaults
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberDrawerState
@@ -288,6 +289,9 @@ fun MainScreen(
             ) {
                 when (selectedTab) {
                     HomeTab.Home -> {
+                        val currentGroupId = serverGroups.firstOrNull()?.id ?: ""
+                        val homeGroupState by mainViewModel.serverGroupState(currentGroupId)
+                            .collectAsStateWithLifecycle()
                         Box(
                             modifier = Modifier
                                 .fillMaxSize()
@@ -342,7 +346,16 @@ fun MainScreen(
                                 contentScale = ContentScale.FillBounds,
                                 alpha = 0.5f
                             )
-                            Column(modifier = Modifier.fillMaxSize()) {
+                            PullToRefreshBox(
+                                isRefreshing = isLoading,
+                                onRefresh = { onAction(MainAction.UpdateSubscriptions) },
+                                modifier = Modifier.fillMaxSize()
+                            ) {
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .verticalScroll(rememberScrollState())
+                                ) {
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -532,22 +545,6 @@ fun MainScreen(
                                 Spacer(modifier = Modifier.height(8.dp))
                             }
 
-                            if (serverGroups.size > 1) {
-                                GroupTabBar(
-                                    groups = serverGroups,
-                                    selectedTabIndex = pagerState.currentPage.coerceIn(0, serverGroups.lastIndex),
-                                    mainViewModel = mainViewModel,
-                                    onTabClick = { targetIndex ->
-                                        scope.launch {
-                                            pagerState.navigateToPageOptimized(
-                                                targetPage = targetIndex,
-                                                animateAdjacentPage = true
-                                            )
-                                        }
-                                    }
-                                )
-                            }
-
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -590,33 +587,16 @@ fun MainScreen(
                                 }
                             }
 
-                            HorizontalPager(
-                                state = pagerState,
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .fillMaxWidth(),
-                                userScrollEnabled = true,
-                                beyondViewportPageCount = 1,
-                                key = { page -> serverGroups.getOrNull(page)?.id ?: "group-page-$page" }
-                            ) { page ->
-                                val group = serverGroups.getOrNull(page) ?: return@HorizontalPager
-                                GroupPagerPage(
-                                    groupId = group.id,
-                                    mainViewModel = mainViewModel,
-                                    selectedGuid = selectedGuid,
-                                    locateTarget = uiState.locateTarget,
-                                    doubleColumnDisplay = doubleColumnDisplay,
-                                    searchQuery = searchQuery,
-                                    lazyListStates = lazyListStates,
-                                    lazyGridStates = lazyGridStates,
-                                    onSelectServer = { guid -> onAction(MainAction.SelectServer(guid)) },
-                                    onEditServer = { guid, profile -> onAction(MainAction.EditServer(guid, profile)) },
-                                    onShareServer = { guid, profile -> shareTarget = Triple(guid, profile, false) },
-                                    onMoreServer = { guid, profile -> shareTarget = Triple(guid, profile, true) },
-                                    onRemoveServer = removeServer,
-                                    contentPadding = PaddingValues(bottom = 16.dp)
+                            homeGroupState.rows.forEach { row ->
+                                ServerRowCompact(
+                                    row = row,
+                                    isSelected = row.guid == selectedGuid,
+                                    onSelect = { onAction(MainAction.SelectServer(row.guid)) },
+                                    onMore = { shareTarget = Triple(row.guid, row.profile, true) }
                                 )
                             }
+                            Spacer(modifier = Modifier.height(16.dp))
+                        }
                         }
                         }
                     }

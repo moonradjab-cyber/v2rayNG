@@ -712,10 +712,14 @@ class MainViewModel(
             var removed = false
             dataSource.getSubscriptions().forEach { cache ->
                 if (cache.guid.isBlank()) return@forEach
-                val hasUrl = cache.subscription.url.isNotBlank()
+                val sub = cache.subscription
+                val hasUrl = sub.url.isNotBlank()
                 val serverCount = dataSource.getServerGuidList(cache.guid).size
                 if (!hasUrl && serverCount == 0) {
                     MmkvManager.removeSubscription(cache.guid)
+                    removed = true
+                } else if (hasUrl && (sub.remarks == "import sub" || sub.remarks.isBlank())) {
+                    MmkvManager.encodeSubscription(cache.guid, sub.copy(remarks = "Maxachkala VPN"))
                     removed = true
                 }
             }

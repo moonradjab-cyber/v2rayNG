@@ -431,6 +431,70 @@ private fun formatNetwork(network: String): String = when (network.lowercase()) 
     else -> network.uppercase()
 }
 
+@Composable
+internal fun ServerRowCompact(
+    row: ServerRowUiModel,
+    isSelected: Boolean,
+    onSelect: () -> Unit,
+    onMore: () -> Unit
+) {
+    val protoLabel = remember(row.guid) { parseProtocolLabel(row.guid) } ?: row.typeDescription
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 8.dp, vertical = 3.dp)
+            .clip(RoundedCornerShape(12.dp))
+            .then(
+                if (isSelected) Modifier.border(
+                    1.5.dp,
+                    MaterialTheme.colorScheme.primary,
+                    RoundedCornerShape(12.dp)
+                ) else Modifier
+            )
+            .background(
+                if (isSelected) MaterialTheme.colorScheme.surfaceContainerHigh else Color.Transparent
+            )
+            .clickable { onSelect() },
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(
+            Modifier
+                .weight(1f)
+                .padding(start = 12.dp, end = 8.dp, top = 8.dp, bottom = 8.dp)
+        ) {
+            Text(
+                row.remarks,
+                style = MaterialTheme.typography.bodyMedium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Text(
+                protoLabel,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
+        if (row.testDelayMillis > 0L) {
+            Text(
+                stringResource(R.string.server_test_delay_value, row.testDelayMillis),
+                style = MaterialTheme.typography.bodySmall,
+                color = colorPing,
+                maxLines = 1
+            )
+        }
+        IconButton(onClick = onMore, modifier = Modifier.size(40.dp)) {
+            Icon(
+                painterResource(R.drawable.ic_more_vert_24dp),
+                stringResource(R.string.acc_more),
+                Modifier.size(20.dp)
+            )
+        }
+    }
+}
+
 internal suspend fun PagerState.navigateToPageOptimized(
     targetPage: Int,
     animateAdjacentPage: Boolean = true
