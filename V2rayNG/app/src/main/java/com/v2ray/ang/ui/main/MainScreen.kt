@@ -1,5 +1,13 @@
 package com.v2ray.ang.ui.main
 
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -39,6 +47,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
@@ -46,6 +55,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -234,7 +246,7 @@ fun MainScreen(
                                 contentDescription = null
                             )
                         },
-                        label = { Text("Home") }
+                        label = { Text("Подключение") }
                     )
                     NavigationBarItem(
                         selected = selectedTab == HomeTab.Providers,
@@ -245,7 +257,7 @@ fun MainScreen(
                                 contentDescription = null
                             )
                         },
-                        label = { Text("Провайдеры") }
+                        label = { Text("Сервера") }
                     )
                     NavigationBarItem(
                         selected = selectedTab == HomeTab.Settings,
@@ -268,7 +280,15 @@ fun MainScreen(
             ) {
                 when (selectedTab) {
                     HomeTab.Home -> {
-                        Column(modifier = Modifier.fillMaxSize()) {
+                        Box(modifier = Modifier.fillMaxSize()) {
+                            Image(
+                                painter = painterResource(R.drawable.ic_bg_mountains),
+                                contentDescription = null,
+                                modifier = Modifier.fillMaxSize(),
+                                contentScale = ContentScale.FillBounds,
+                                alpha = 0.2f
+                            )
+                            Column(modifier = Modifier.fillMaxSize()) {
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -310,22 +330,29 @@ fun MainScreen(
                                 }
                             }
 
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(200.dp)
-                            ) {
-                                ConnectButton(
-                                    displayText = displayText,
-                                    isRunning = isRunning,
-                                    isDarkTheme = isDarkTheme,
-                                    onToggle = { onAction(MainAction.ToggleService) }
-                                )
-                            }
+                            ConnectButton(
+                                displayText = displayText,
+                                isRunning = isRunning,
+                                isDarkTheme = isDarkTheme,
+                                onToggle = { onAction(MainAction.ToggleService) }
+                            )
 
                             val currentGroup = serverGroups.getOrNull(pagerState.currentPage)
                             val renewUrl = currentGroup?.let { MmkvManager.decodeSubscription(it.id)?.url }
                             if (currentGroup != null && !renewUrl.isNullOrEmpty()) {
+                                val subInfo by produceState<SubInfo?>(initialValue = null, key1 = renewUrl) {
+                                    value = SubInfoFetcher.fetch(renewUrl)
+                                }
+                                val renewTransition = rememberInfiniteTransition(label = "renew")
+                                val renewPulse by renewTransition.animateFloat(
+                                    initialValue = 1f,
+                                    targetValue = 1.06f,
+                                    animationSpec = infiniteRepeatable(
+                                        animation = tween(900, easing = FastOutSlowInEasing),
+                                        repeatMode = RepeatMode.Reverse
+                                    ),
+                                    label = "renewPulse"
+                                )
                                 Surface(
                                     modifier = Modifier
                                         .fillMaxWidth()
@@ -333,34 +360,85 @@ fun MainScreen(
                                     shape = RoundedCornerShape(12.dp),
                                     color = MaterialTheme.colorScheme.surfaceContainer
                                 ) {
-                                    Row(
-                                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
-                                        verticalAlignment = Alignment.CenterVertically
+                                    Column(
+                                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp)
                                     ) {
-                                        Text(
-                                            text = currentGroup.remarks,
-                                            style = MaterialTheme.typography.titleSmall,
-                                            color = MaterialTheme.colorScheme.onSurface,
-                                            modifier = Modifier.weight(1f)
-                                        )
-                                        Surface(
-                                            shape = RoundedCornerShape(99.dp),
-                                            color = MaterialTheme.colorScheme.secondaryContainer,
-                                            modifier = Modifier.clickable {
-                                                runCatching {
-                                                    context.startActivity(
-                                                        Intent(Intent.ACTION_VIEW, Uri.parse(renewUrl))
-                                                    )
-                                                }
-                                            }
-                                        ) {
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
                                             Text(
-                                                text = "Продлить",
-                                                style = MaterialTheme.typography.bodySmall,
-                                                color = MaterialTheme.colorScheme.onSecondaryContainer,
-                                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 7.dp)
+                                                text = currentGroup.remarks,
+                                                style = MaterialTheme.typography.titleSmall,
+                                                color = MaterialTheme.colorScheme.onSurface,
+                                                modifier = Modifier.weight(1f)
                                             )
+                                            Surface(
+                                                shape = RoundedCornerShape(99.dp),
+                                                color = MaterialTheme.colorScheme.secondaryContainer,
+                                                modifier = Modifier.scale(renewPulse).clickable {
+                                                    runCatching {
+                                                        context.startActivity(
+                                                            Intent(Intent.ACTION_VIEW, Uri.parse(renewUrl))
+                                                        )
+                                                    }
+                                                }
+                                            ) {
+                                                Text(
+                                                    text = "Продлить",
+                                                    style = MaterialTheme.typography.bodySmall,
+                                                    color = MaterialTheme.colorScheme.onSecondaryContainer,
+                                                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 7.dp)
+                                                )
+                                            }
                                         }
+
+                                        val info = subInfo
+                                        if (info != null) {
+                                            val fraction = if (info.total > 0L) {
+                                                (info.used.toFloat() / info.total.toFloat()).coerceIn(0f, 1f)
+                                            } else {
+                                                0f
+                                            }
+                                            Spacer(modifier = Modifier.height(10.dp))
+                                            Box(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .height(6.dp)
+                                                    .clip(RoundedCornerShape(99.dp))
+                                                    .background(MaterialTheme.colorScheme.surfaceContainerHighest)
+                                            ) {
+                                                Box(
+                                                    modifier = Modifier
+                                                        .fillMaxWidth(fraction)
+                                                        .height(6.dp)
+                                                        .clip(RoundedCornerShape(99.dp))
+                                                        .background(MaterialTheme.colorScheme.primary)
+                                                )
+                                            }
+                                            Spacer(modifier = Modifier.height(6.dp))
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                horizontalArrangement = Arrangement.SpaceBetween
+                                            ) {
+                                                Text(
+                                                    text = formatTraffic(info.used, info.total),
+                                                    style = MaterialTheme.typography.bodySmall,
+                                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                )
+                                                Text(
+                                                    text = formatExpire(info.expireEpochSec),
+                                                    style = MaterialTheme.typography.bodySmall,
+                                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                )
+                                            }
+                                        }
+
+                                        val announce = subInfo?.announce
+                                        Spacer(modifier = Modifier.height(10.dp))
+                                        Text(
+                                            text = if (!announce.isNullOrBlank()) announce
+                                            else "Чтобы продлить подписку — нажмите «Продлить» выше. Откроется страница оплаты со всеми тарифами.",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
                                     }
                                 }
                                 Spacer(modifier = Modifier.height(8.dp))
@@ -393,6 +471,15 @@ fun MainScreen(
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     modifier = Modifier.weight(1f)
+                                )
+                                Icon(
+                                    painterResource(R.drawable.ic_refresh_24dp),
+                                    contentDescription = "Обновить",
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier
+                                        .clickable { onAction(MainAction.UpdateSubscriptions) }
+                                        .padding(8.dp)
+                                        .size(20.dp)
                                 )
                                 Row(
                                     modifier = Modifier
@@ -442,6 +529,7 @@ fun MainScreen(
                                     contentPadding = PaddingValues(bottom = 16.dp)
                                 )
                             }
+                        }
                         }
                     }
 
@@ -522,8 +610,9 @@ private fun ProvidersContent(
 
         Spacer(modifier = Modifier.height(16.dp))
 
+        val shownGroups = groups.filter { MmkvManager.decodeServerList(it.id).isNotEmpty() }
         LazyColumn(modifier = Modifier.fillMaxSize()) {
-            items(groups) { group ->
+            items(shownGroups) { group ->
                 val count = MmkvManager.decodeServerList(group.id).size
                 Surface(
                     modifier = Modifier
@@ -566,6 +655,24 @@ private fun ProvidersContent(
             }
         }
     }
+}
+
+private fun formatTraffic(used: Long, total: Long): String {
+    val gb = 1024.0 * 1024.0 * 1024.0
+    val usedGb = used / gb
+    return if (total > 0L) {
+        val totalGb = total / gb
+        String.format(java.util.Locale.US, "%.1f ГБ / %.1f ГБ", usedGb, totalGb)
+    } else {
+        String.format(java.util.Locale.US, "%.1f ГБ / ∞", usedGb)
+    }
+}
+
+private fun formatExpire(expireEpochSec: Long): String {
+    if (expireEpochSec <= 0L) return "Бессрочно"
+    val nowSec = System.currentTimeMillis() / 1000L
+    val days = (expireEpochSec - nowSec) / 86400L
+    return if (days >= 0L) "осталось $days дн." else "Истекла"
 }
 
 private val settingsGroup1 = listOf(

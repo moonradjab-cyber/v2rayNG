@@ -9,10 +9,9 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
@@ -26,9 +25,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.v2ray.ang.R
 import com.v2ray.ang.ui.compose.colorFabActive
@@ -44,7 +45,6 @@ fun ConnectButton(
 ) {
     val transition = rememberInfiniteTransition(label = "connect")
 
-    // Expanding "radar" pulse when connected
     val pulseScale by transition.animateFloat(
         initialValue = 1f,
         targetValue = 1.35f,
@@ -63,7 +63,6 @@ fun ConnectButton(
         ),
         label = "pulseAlpha"
     )
-    // Breathing ring when connected
     val breath by transition.animateFloat(
         initialValue = 0.45f,
         targetValue = 1f,
@@ -77,17 +76,31 @@ fun ConnectButton(
     val activeColor = colorFabActive
     val inactiveColor = if (isDarkTheme) colorFabInactiveDark else colorFabInactiveLight
     val ringColor = MaterialTheme.colorScheme.primary
+    val glowColor = if (isRunning) activeColor.copy(alpha = 0.55f) else ringColor.copy(alpha = 0.22f)
 
     Column(
-        modifier = Modifier.fillMaxSize(),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 8.dp, bottom = 12.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Box(
-            modifier = Modifier.size(150.dp),
+            modifier = Modifier.size(190.dp),
             contentAlignment = Alignment.Center
         ) {
-            // Expanding pulse halo (only when connected)
+            // Soft glow behind the button
+            Box(
+                modifier = Modifier
+                    .size(190.dp)
+                    .clip(CircleShape)
+                    .background(
+                        Brush.radialGradient(
+                            colors = listOf(glowColor, Color.Transparent)
+                        )
+                    )
+            )
+
+            // Expanding pulse (only when connected)
             if (isRunning) {
                 Box(
                     modifier = Modifier
@@ -99,7 +112,7 @@ fun ConnectButton(
                 )
             }
 
-            // Glowing ring around the button
+            // Breathing ring
             Box(
                 modifier = Modifier
                     .size(132.dp)
@@ -133,7 +146,10 @@ fun ConnectButton(
             text = displayText,
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(top = 16.dp)
+            textAlign = TextAlign.Center,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 12.dp, start = 24.dp, end = 24.dp)
         )
     }
 }
