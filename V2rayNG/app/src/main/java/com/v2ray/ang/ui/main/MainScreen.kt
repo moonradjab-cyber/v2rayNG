@@ -322,6 +322,26 @@ fun MainScreen(
                                         )
                                     )
                             )
+                            val bgTransition = rememberInfiniteTransition(label = "bg")
+                            val bgDrift by bgTransition.animateFloat(
+                                initialValue = -8f,
+                                targetValue = 8f,
+                                animationSpec = infiniteRepeatable(
+                                    animation = tween(9000, easing = LinearEasing),
+                                    repeatMode = RepeatMode.Reverse
+                                ),
+                                label = "bgDrift"
+                            )
+                            Image(
+                                painter = painterResource(R.drawable.ic_bg_mountains),
+                                contentDescription = null,
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .scale(1.15f)
+                                    .offset(x = bgDrift.dp),
+                                contentScale = ContentScale.FillBounds,
+                                alpha = 0.5f
+                            )
                             Column(modifier = Modifier.fillMaxSize()) {
                             Row(
                                 modifier = Modifier
