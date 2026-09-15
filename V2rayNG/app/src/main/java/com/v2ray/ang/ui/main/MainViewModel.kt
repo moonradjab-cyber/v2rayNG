@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.v2ray.ang.handler.MmkvManager
 import com.v2ray.ang.AppConfig
 import com.v2ray.ang.R
 import com.v2ray.ang.dto.ConnectionTestResult
@@ -703,6 +704,25 @@ class MainViewModel(
 
     fun refreshSelectedGuid() {
         _uiState.update { it.copy(selectedGuid = dataSource.getSelectServer()) }
+    }
+
+    /** Removes leftover empty subscriptions (e.g. the built-in "Default" with no URL and no servers). */
+    fun removeEmptySubscriptions() {
+        viewModelScope.launch(ioDispatcher) {
+            var removed = false
+            dataSource.getSubscriptions().forEach { cache ->
+                if (cache.guid.isBlank()) return@forEach
+                val hasUrl = cache.subscription.url.isNotBlank()
+                val serverCount = dataSource.getServerGuidList(cache.guid).size
+                if (!hasUrl && serverCount == 0) {
+                    MmkvManager.removeSubscription(cache.guid)
+                    removed = true
+                }
+            }
+            if (removed) {
+                setupGroupTab(forceRefresh = true)
+            }
+        }
     }
 
     fun removeServerAndRefresh(guid: String) {

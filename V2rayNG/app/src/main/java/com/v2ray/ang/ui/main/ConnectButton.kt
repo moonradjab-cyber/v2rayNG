@@ -41,7 +41,8 @@ fun ConnectButton(
     displayText: String,
     isRunning: Boolean,
     isDarkTheme: Boolean,
-    onToggle: () -> Unit
+    onToggle: () -> Unit,
+    onStatusClick: () -> Unit
 ) {
     val transition = rememberInfiniteTransition(label = "connect")
 
@@ -149,6 +150,7 @@ fun ConnectButton(
             textAlign = TextAlign.Center,
             modifier = Modifier
                 .fillMaxWidth()
+                .clickable(onClick = onStatusClick)
                 .padding(top = 12.dp, start = 24.dp, end = 24.dp)
         )
     }

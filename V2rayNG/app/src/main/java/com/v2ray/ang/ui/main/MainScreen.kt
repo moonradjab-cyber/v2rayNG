@@ -158,6 +158,10 @@ fun MainScreen(
             }
     }
 
+    LaunchedEffect(Unit) {
+        mainViewModel.removeEmptySubscriptions()
+    }
+
     MainDialogs(
         showDelAllConfirm = showDelAllConfirm,
         onDismissDelAll = { showDelAllConfirm = false },
@@ -313,6 +317,39 @@ fun MainScreen(
                             ) {
                                 Surface(
                                     shape = RoundedCornerShape(99.dp),
+                                    color = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.clickable {
+                                        runCatching {
+                                            context.startActivity(
+                                                Intent(
+                                                    Intent.ACTION_VIEW,
+                                                    Uri.parse("https://t.me/maxachkalavpn_bot")
+                                                )
+                                            )
+                                        }
+                                    }
+                                ) {
+                                    Row(
+                                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Icon(
+                                            painterResource(R.drawable.ic_telegram_24dp),
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.onPrimary,
+                                            modifier = Modifier.size(16.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(6.dp))
+                                        Text(
+                                            text = "Бот",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onPrimary
+                                        )
+                                    }
+                                }
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Surface(
+                                    shape = RoundedCornerShape(99.dp),
                                     color = MaterialTheme.colorScheme.secondaryContainer,
                                     modifier = Modifier.clickable {
                                         runCatching {
@@ -349,7 +386,8 @@ fun MainScreen(
                                 displayText = displayText,
                                 isRunning = isRunning,
                                 isDarkTheme = isDarkTheme,
-                                onToggle = { onAction(MainAction.ToggleService) }
+                                onToggle = { onAction(MainAction.ToggleService) },
+                                onStatusClick = { onAction(MainAction.TestCurrentServer) }
                             )
 
                             val currentGroup = serverGroups.getOrNull(pagerState.currentPage)
