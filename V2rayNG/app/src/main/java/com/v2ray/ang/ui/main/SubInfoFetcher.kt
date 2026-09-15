@@ -1,22 +1,34 @@
 package com.v2ray.ang.ui.main
 
 import android.util.Base64
+import com.v2ray.ang.handler.MmkvManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.net.HttpURLConnection
 import java.net.URL
+import java.util.UUID
 
 /**
- * Traffic / expiry / announce info parsed from the subscription response headers.
+ * Traffic / expiry / announce / title parsed from the subscription response headers.
  */
 data class SubInfo(
     val used: Long,
     val total: Long,
     val expireEpochSec: Long,
-    val announce: String?
+    val announce: String?,
+    val profileTitle: String?
 )
 
 object SubInfoFetcher {
+    private fun deviceHwid(): String {
+        var hwid = MmkvManager.decodeSettingsString("device_hwid") ?: ""
+        if (hwid.isBlank()) {
+            hwid = UUID.randomUUID().toString()
+            MmkvManager.encodeSettings("device_hwid", hwid)
+        }
+        return hwid
+    }
+
     suspend fun fetch(url: String): SubInfo? = withContext(Dispatchers.IO) {
         var conn: HttpURLConnection? = null
         try {
@@ -26,13 +38,18 @@ object SubInfoFetcher {
                 readTimeout = 8000
                 instanceFollowRedirects = true
                 setRequestProperty("User-Agent", "v2rayNG")
+                setRequestProperty("x-hwid", deviceHwid())
+                setRequestProperty("x-device-os", "Android")
             }
             conn.connect()
 
             val userInfo = conn.getHeaderField("Subscription-Userinfo")
-            val announce = decodeAnnounce(conn.getHeaderField("announce"))
+            val announce = decodeHeaderText(conn.getHeaderField("announce"))
+            val profileTitle = decodeHeaderText(conn.getHeaderField("profile-title"))
 
-            if (userInfo.isNullOrBlank() && announce.isNullOrBlank()) return@withContext null
+            if (userInfo.isNullOrBlank() && announce.isNullOrBlank() && profileTitle.isNullOrBlank()) {
+                return@withContext null
+            }
 
             var upload = 0L
             var download = 0L
@@ -54,7 +71,8 @@ object SubInfoFetcher {
                 used = upload + download,
                 total = total,
                 expireEpochSec = expire,
-                announce = announce
+                announce = announce,
+                profileTitle = profileTitle
             )
         } catch (e: Exception) {
             null
@@ -66,14 +84,13 @@ object SubInfoFetcher {
     private fun isClean(text: String): Boolean =
         text.isNotBlank() && !text.contains('\uFFFD')
 
-    private fun decodeAnnounce(raw: String?): String? {
+    private fun decodeHeaderText(raw: String?): String? {
         if (raw.isNullOrBlank()) return null
         var s = raw.trim()
         if (s.startsWith("rwEncodeBase64:")) {
             s = s.removePrefix("rwEncodeBase64:").trim()
         }
 
-        // 1) Try base64 (standard, then URL-safe). Accept only clean UTF-8 text.
         val cleaned = s.replace(Regex("\\s"), "")
         for (flags in intArrayOf(Base64.DEFAULT, Base64.URL_SAFE)) {
             val text = try {
@@ -84,7 +101,6 @@ object SubInfoFetcher {
             if (isClean(text)) return text
         }
 
-        // 2) Maybe the header carried raw UTF-8 read as ISO-8859-1 — recover it.
         val recovered = try {
             String(raw.toByteArray(Charsets.ISO_8859_1), Charsets.UTF_8).trim()
         } catch (e: Exception) {
@@ -94,7 +110,6 @@ object SubInfoFetcher {
             return recovered.removePrefix("rwEncodeBase64:").trim()
         }
 
-        // 3) Could not decode reliably — let the UI show its static fallback text.
         return null
     }
 }

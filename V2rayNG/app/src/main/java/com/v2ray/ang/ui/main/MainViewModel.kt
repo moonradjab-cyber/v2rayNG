@@ -461,7 +461,7 @@ class MainViewModel(
     }
 
     private fun importConfigViaSub() {
-        val subId = uiState.value.selectedGroupId
+        val subId = "" // always update all subscriptions (skip empty Default automatically)
         launchLoading {
             withContext(ioDispatcher) {
                 try {

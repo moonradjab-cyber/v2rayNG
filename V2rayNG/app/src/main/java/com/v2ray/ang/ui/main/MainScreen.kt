@@ -1,6 +1,7 @@
 package com.v2ray.ang.ui.main
 
 import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
@@ -18,6 +19,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -281,12 +283,25 @@ fun MainScreen(
                 when (selectedTab) {
                     HomeTab.Home -> {
                         Box(modifier = Modifier.fillMaxSize()) {
+                            val bgTransition = rememberInfiniteTransition(label = "bg")
+                            val bgDrift by bgTransition.animateFloat(
+                                initialValue = -10f,
+                                targetValue = 10f,
+                                animationSpec = infiniteRepeatable(
+                                    animation = tween(9000, easing = LinearEasing),
+                                    repeatMode = RepeatMode.Reverse
+                                ),
+                                label = "bgDrift"
+                            )
                             Image(
                                 painter = painterResource(R.drawable.ic_bg_mountains),
                                 contentDescription = null,
-                                modifier = Modifier.fillMaxSize(),
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .scale(1.15f)
+                                    .offset(x = bgDrift.dp),
                                 contentScale = ContentScale.FillBounds,
-                                alpha = 0.2f
+                                alpha = 0.32f
                             )
                             Column(modifier = Modifier.fillMaxSize()) {
                             Row(
@@ -365,7 +380,7 @@ fun MainScreen(
                                     ) {
                                         Row(verticalAlignment = Alignment.CenterVertically) {
                                             Text(
-                                                text = currentGroup.remarks,
+                                                text = subInfo?.profileTitle ?: currentGroup.remarks,
                                                 style = MaterialTheme.typography.titleSmall,
                                                 color = MaterialTheme.colorScheme.onSurface,
                                                 modifier = Modifier.weight(1f)
