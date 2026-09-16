@@ -16,7 +16,8 @@ data class SubInfo(
     val total: Long,
     val expireEpochSec: Long,
     val announce: String?,
-    val profileTitle: String?
+    val profileTitle: String?,
+    val userId: String?
 )
 
 object SubInfoFetcher {
@@ -46,8 +47,9 @@ object SubInfoFetcher {
             val userInfo = conn.getHeaderField("Subscription-Userinfo")
             val announce = decodeHeaderText(conn.getHeaderField("announce"))
             val profileTitle = decodeHeaderText(conn.getHeaderField("profile-title"))
+            val userId = extractUserId(conn, url)
 
-            if (userInfo.isNullOrBlank() && announce.isNullOrBlank() && profileTitle.isNullOrBlank()) {
+            if (userInfo.isNullOrBlank() && announce.isNullOrBlank() && profileTitle.isNullOrBlank() && userId.isNullOrBlank()) {
                 return@withContext null
             }
 
@@ -72,12 +74,36 @@ object SubInfoFetcher {
                 total = total,
                 expireEpochSec = expire,
                 announce = announce,
-                profileTitle = profileTitle
+                profileTitle = profileTitle,
+                userId = userId
             )
         } catch (e: Exception) {
             null
         } finally {
             conn?.disconnect()
+        }
+    }
+
+    private fun extractUserId(conn: HttpURLConnection, url: String): String? {
+        val header = sequenceOf("x-user-id", "subscription-userid", "profile-id", "x-account")
+            .map { conn.getHeaderField(it) }
+            .firstOrNull { !it.isNullOrBlank() }
+        if (!header.isNullOrBlank()) return header.trim()
+
+        val cd = conn.getHeaderField("Content-Disposition")
+        if (!cd.isNullOrBlank()) {
+            val m = Regex("filename\\*?=\"?([^\";]+)\"?", RegexOption.IGNORE_CASE).find(cd)
+            val name = m?.groupValues?.getOrNull(1)?.trim()
+            if (!name.isNullOrBlank()) return name
+        }
+
+        return try {
+            val path = URL(url).path.trimEnd('/')
+            val seg = path.substringAfterLast('/')
+            val decoded = java.net.URLDecoder.decode(seg, "UTF-8").trim()
+            decoded.ifBlank { null }
+        } catch (e: Exception) {
+            null
         }
     }
 

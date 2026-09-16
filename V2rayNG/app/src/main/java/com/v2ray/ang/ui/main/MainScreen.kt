@@ -7,6 +7,7 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -59,8 +60,11 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shadow
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.res.painterResource
@@ -353,9 +357,12 @@ fun MainScreen(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(horizontal = 12.dp, vertical = 4.dp),
-                                horizontalArrangement = Arrangement.End,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
+                                BrandTitle(
+                                    isRunning = isRunning,
+                                    modifier = Modifier.weight(1f)
+                                )
                                 Surface(
                                     shape = RoundedCornerShape(99.dp),
                                     color = MaterialTheme.colorScheme.primary,
@@ -464,7 +471,8 @@ fun MainScreen(
                                         .fillMaxWidth()
                                         .padding(horizontal = 12.dp),
                                     shape = RoundedCornerShape(12.dp),
-                                    color = MaterialTheme.colorScheme.surfaceContainer
+                                    color = MaterialTheme.colorScheme.surfaceContainer,
+                                    border = BorderStroke(1.5.dp, MaterialTheme.colorScheme.primary)
                                 ) {
                                     Column(
                                         modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp)
@@ -492,6 +500,33 @@ fun MainScreen(
                                                     style = MaterialTheme.typography.bodySmall,
                                                     color = MaterialTheme.colorScheme.onSecondaryContainer,
                                                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 7.dp)
+                                                )
+                                            }
+                                        }
+
+                                        val userId = subInfo?.userId
+                                        if (!userId.isNullOrBlank()) {
+                                            Spacer(modifier = Modifier.height(6.dp))
+                                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                                Text(
+                                                    text = "ID:",
+                                                    style = MaterialTheme.typography.bodySmall,
+                                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                )
+                                                Spacer(modifier = Modifier.width(6.dp))
+                                                Text(
+                                                    text = userId,
+                                                    style = MaterialTheme.typography.bodySmall,
+                                                    color = MaterialTheme.colorScheme.onSurface,
+                                                    maxLines = 1,
+                                                    modifier = Modifier
+                                                        .weight(1f)
+                                                        .clickable {
+                                                            runCatching {
+                                                                val cm = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                                                                cm.setPrimaryClip(android.content.ClipData.newPlainText("id", userId))
+                                                            }
+                                                        }
                                                 )
                                             }
                                         }
@@ -729,6 +764,42 @@ private fun ProvidersContent(
             }
         }
     }
+}
+
+@Composable
+private fun BrandTitle(isRunning: Boolean, modifier: Modifier = Modifier) {
+    val text = "Maxachkala VPN"
+    if (!isRunning) {
+        Text(
+            text = text,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+            modifier = modifier
+        )
+        return
+    }
+    val transition = rememberInfiniteTransition(label = "brand")
+    val pulse by transition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1300, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "brandPulse"
+    )
+    val glow = lerp(Color(0xFF7C6CF5), Color(0xFFFF6B9D), pulse)
+    val blur = 5f + pulse * 18f
+    Text(
+        text = text,
+        style = MaterialTheme.typography.titleMedium.copy(
+            color = Color(0xFFC9BEFF),
+            shadow = Shadow(color = glow, offset = Offset.Zero, blurRadius = blur)
+        ),
+        fontWeight = FontWeight.Bold,
+        modifier = modifier
+    )
 }
 
 private fun formatTraffic(used: Long, total: Long): String {
