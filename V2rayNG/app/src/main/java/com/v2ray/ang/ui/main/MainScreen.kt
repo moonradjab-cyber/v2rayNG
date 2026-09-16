@@ -70,6 +70,7 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.v2ray.ang.R
@@ -102,6 +103,9 @@ fun MainScreen(
     val serverGroups = remember(uiState.groups) {
         orderedGroups.filter { MmkvManager.decodeServerList(it.id).isNotEmpty() }
             .ifEmpty { orderedGroups }
+    }
+    val hasServers = remember(uiState.groups) {
+        orderedGroups.any { MmkvManager.decodeServerList(it.id).isNotEmpty() }
     }
     val isLoading by mainViewModel.isLoading.collectAsStateWithLifecycle()
     val isRunning = uiState.isRunning
@@ -233,16 +237,17 @@ fun MainScreen(
                         onAction = onAction,
                         onMoreMenuAction = { action ->
                             when (action) {
-                                MainMoreMenuAction.RestartService -> onAction(MainAction.RestartService)
-                                MainMoreMenuAction.DeleteAll -> showDelAllConfirm = true
-                                MainMoreMenuAction.DeleteDuplicate -> showDelDuplicateConfirm = true
-                                MainMoreMenuAction.DeleteInvalid -> showDelInvalidConfirm = true
-                                MainMoreMenuAction.ExportAll -> onAction(MainAction.ExportAll)
-                                MainMoreMenuAction.LocateSelected -> onAction(MainAction.LocateSelectedServer)
-                                MainMoreMenuAction.SortByTestResults -> onAction(MainAction.SortByTestResults)
-                                MainMoreMenuAction.TestAll -> onAction(MainAction.TestAllServers)
-                                MainMoreMenuAction.TestAllRealPing -> onAction(MainAction.TestRealAllServers)
+                                MainMoreMenuAction.SubscribeBot -> runCatching {
+                                    context.startActivity(
+                                        Intent(
+                                            Intent.ACTION_VIEW,
+                                            Uri.parse("https://t.me/maxachkalavpn_bot")
+                                        )
+                                    )
+                                }
                                 MainMoreMenuAction.UpdateSubscriptions -> onAction(MainAction.UpdateSubscriptions)
+                                MainMoreMenuAction.DeleteAll -> showDelAllConfirm = true
+                                MainMoreMenuAction.RestartService -> onAction(MainAction.RestartService)
                             }
                         }
                     )
@@ -450,6 +455,21 @@ fun MainScreen(
                                         .fillMaxSize()
                                         .verticalScroll(rememberScrollState())
                                 ) {
+                            if (!hasServers) {
+                                EmptyStateActions(
+                                    onGetViaBot = {
+                                        runCatching {
+                                            context.startActivity(
+                                                Intent(
+                                                    Intent.ACTION_VIEW,
+                                                    Uri.parse("https://t.me/maxachkalavpn_bot")
+                                                )
+                                            )
+                                        }
+                                    },
+                                    onPaste = { onAction(MainAction.ImportClipboard) }
+                                )
+                            }
                             val currentGroup = serverGroups.getOrNull(pagerState.currentPage)
                             val renewUrl = currentGroup?.let { MmkvManager.decodeSubscription(it.id)?.url }
                             if (currentGroup != null && !renewUrl.isNullOrEmpty()) {
@@ -761,6 +781,82 @@ private fun ProvidersContent(
                         )
                     }
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun EmptyStateActions(onGetViaBot: () -> Unit, onPaste: () -> Unit) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 24.dp, vertical = 28.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            text = "Нет активной подписки",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onBackground
+        )
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(
+            text = "Получите подписку в боте, затем вставьте ссылку",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center
+        )
+        Spacer(modifier = Modifier.height(18.dp))
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { onGetViaBot() },
+            shape = RoundedCornerShape(16.dp),
+            color = MaterialTheme.colorScheme.primary
+        ) {
+            Row(
+                modifier = Modifier.padding(vertical = 16.dp),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.ic_telegram_24dp),
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onPrimary
+                )
+                Spacer(modifier = Modifier.width(10.dp))
+                Text(
+                    text = "Получить подписку в боте",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onPrimary
+                )
+            }
+        }
+        Spacer(modifier = Modifier.height(10.dp))
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { onPaste() },
+            shape = RoundedCornerShape(16.dp),
+            color = MaterialTheme.colorScheme.secondaryContainer
+        ) {
+            Row(
+                modifier = Modifier.padding(vertical = 14.dp),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.ic_paste_24dp),
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSecondaryContainer
+                )
+                Spacer(modifier = Modifier.width(10.dp))
+                Text(
+                    text = "Вставить из буфера",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSecondaryContainer
+                )
             }
         }
     }

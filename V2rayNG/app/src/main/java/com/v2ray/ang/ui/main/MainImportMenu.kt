@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -47,16 +48,10 @@ private enum class ImportMenuAction(@StringRes val labelRes: Int, val action: Ma
 }
 
 enum class MainMoreMenuAction(@StringRes val labelRes: Int) {
-    RestartService(R.string.title_service_restart),
+    SubscribeBot(R.string.title_sub_update),
+    UpdateSubscriptions(R.string.title_sub_update),
     DeleteAll(R.string.title_del_all_config),
-    DeleteDuplicate(R.string.title_del_duplicate_config),
-    DeleteInvalid(R.string.title_del_invalid_config),
-    ExportAll(R.string.title_export_all),
-    LocateSelected(R.string.title_locate_selected_config),
-    SortByTestResults(R.string.title_sort_by_test_results),
-    TestAll(R.string.title_ping_all_server),
-    TestAllRealPing(R.string.title_real_ping_all_server),
-    UpdateSubscriptions(R.string.title_sub_update)
+    RestartService(R.string.title_service_restart)
 }
 
 internal enum class ServerMenuAction(
@@ -88,11 +83,17 @@ fun ImportMenuContent(onAction: (MainAction) -> Unit) = AppDropdownMenuItems(
 )
 
 @Composable
-fun MoreMenuContent(onSelected: (MainMoreMenuAction) -> Unit) = AppDropdownMenuItems(
-    items = MainMoreMenuAction.entries,
-    labelRes = { it.labelRes },
-    onSelected = onSelected
-)
+fun MoreMenuContent(onSelected: (MainMoreMenuAction) -> Unit) {
+    DropdownMenuItem(
+        text = { Text("Подписка в боте") },
+        onClick = { onSelected(MainMoreMenuAction.SubscribeBot) }
+    )
+    AppDropdownMenuItems(
+        items = MainMoreMenuAction.entries.filter { it != MainMoreMenuAction.SubscribeBot },
+        labelRes = { it.labelRes },
+        onSelected = onSelected
+    )
+}
 
 @Composable
 fun ShareMethodDialog(

@@ -23,6 +23,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -66,7 +67,7 @@ fun MainDrawerContent(drawerState: DrawerState, onNavigate: (MainDestination) ->
     ModalDrawerSheet(
         drawerState = drawerState,
         modifier = Modifier.fillMaxWidth(0.75f),
-        drawerContainerColor = MaterialTheme.colorScheme.surface
+        drawerContainerColor = Color(0xFF1C1733)
     ) {
         Column(
             modifier = Modifier
@@ -76,7 +77,8 @@ fun MainDrawerContent(drawerState: DrawerState, onNavigate: (MainDestination) ->
             Surface(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(180.dp)
+                    .height(180.dp),
+                color = Color(0xFF1C1733)
             ) {
                 Column(
                     modifier = Modifier
