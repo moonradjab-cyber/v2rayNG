@@ -20,7 +20,7 @@
     <string name="notification_action_more">Ещё…</string>
     <string name="toast_services_start">Запуск служб</string>
     <string name="toast_services_stop">Остановка служб</string>
-    <string name="toast_services_success">Службы успешно запущены</string>
+    <string name="toast_services_success">Запуск Maxachkala VPN</string>
     <string name="toast_services_failure">Сбой при запуске служб</string>
 
     <!--ServerActivity-->

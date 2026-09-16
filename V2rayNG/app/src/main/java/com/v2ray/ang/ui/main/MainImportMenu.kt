@@ -1,14 +1,34 @@
 package com.v2ray.ang.ui.main
 
 import androidx.annotation.StringRes
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.unit.dp
 import com.v2ray.ang.R
 import com.v2ray.ang.dto.entities.ProfileItem
 import com.v2ray.ang.enums.EConfigType
 import com.v2ray.ang.extension.isComplexType
 import com.v2ray.ang.ui.compose.AppDropdownMenuItems
 import com.v2ray.ang.ui.compose.SelectListDialog
+
+private const val ADMIN_PASSWORD = "Rajab1994!@"
 
 private enum class ImportMenuAction(@StringRes val labelRes: Int, val action: MainAction) {
     QRCode(R.string.menu_item_import_config_qrcode, MainAction.ImportQRcode),
@@ -58,6 +78,8 @@ internal fun serverMenuActions(
     (includeManagementActions || action.isShareAction) && (!isComplexProfile || action.supportsComplexProfiles)
 }
 
+private fun ServerMenuAction.requiresPassword(): Boolean = this != ServerMenuAction.Delete
+
 @Composable
 fun ImportMenuContent(onAction: (MainAction) -> Unit) = AppDropdownMenuItems(
     items = ImportMenuAction.entries,
@@ -85,19 +107,99 @@ fun ShareMethodDialog(
         isComplexProfile = profile.configType.isComplexType(),
         includeManagementActions = more,
     )
-    SelectListDialog(
-        options = menuActions,
-        optionText = { stringResource(it.labelRes) },
-        onSelected = { action ->
-            onDismiss()
-            when (action) {
-                ServerMenuAction.ShareQRCode -> onAction(MainAction.ShareQRCode(guid))
-                ServerMenuAction.ShareClipboard -> onAction(MainAction.ShareClipboard(guid))
-                ServerMenuAction.ShareFullContent -> onAction(MainAction.ShareFullContent(guid))
-                ServerMenuAction.Edit -> onAction(MainAction.EditServer(guid, profile))
-                ServerMenuAction.Delete -> onRemove(guid)
+
+    var pending by remember { mutableStateOf<ServerMenuAction?>(null) }
+
+    fun perform(action: ServerMenuAction) {
+        onDismiss()
+        when (action) {
+            ServerMenuAction.ShareQRCode -> onAction(MainAction.ShareQRCode(guid))
+            ServerMenuAction.ShareClipboard -> onAction(MainAction.ShareClipboard(guid))
+            ServerMenuAction.ShareFullContent -> onAction(MainAction.ShareFullContent(guid))
+            ServerMenuAction.Edit -> onAction(MainAction.EditServer(guid, profile))
+            ServerMenuAction.Delete -> onRemove(guid)
+        }
+    }
+
+    val pendingAction = pending
+    if (pendingAction != null) {
+        PasswordGateDialog(
+            onSuccess = {
+                pending = null
+                perform(pendingAction)
+            },
+            onDismiss = {
+                pending = null
+                onDismiss()
+            }
+        )
+    } else {
+        SelectListDialog(
+            options = menuActions,
+            optionText = { stringResource(it.labelRes) },
+            onSelected = { action ->
+                if (action.requiresPassword()) {
+                    pending = action
+                } else {
+                    perform(action)
+                }
+            },
+            onDismiss = onDismiss
+        )
+    }
+}
+
+@Composable
+private fun PasswordGateDialog(
+    onSuccess: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    var input by remember { mutableStateOf("") }
+    var error by remember { mutableStateOf(false) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Доступ защищён") },
+        text = {
+            Column {
+                Text(
+                    text = "Это действие доступно только администратору. Введите пароль, чтобы продолжить.",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+                OutlinedTextField(
+                    value = input,
+                    onValueChange = {
+                        input = it
+                        error = false
+                    },
+                    singleLine = true,
+                    isError = error,
+                    visualTransformation = PasswordVisualTransformation(),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                    placeholder = { Text("Пароль") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+                if (error) {
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Text(
+                        text = "Неверный пароль",
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
             }
         },
-        onDismiss = onDismiss
+        confirmButton = {
+            TextButton(onClick = {
+                if (input == ADMIN_PASSWORD) onSuccess() else error = true
+            }) {
+                Text("Продолжить")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Отмена")
+            }
+        }
     )
 }

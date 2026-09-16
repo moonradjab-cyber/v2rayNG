@@ -82,7 +82,7 @@ fun MainTopBar(
                     expanded = showImportMenu,
                     onDismissRequest = { showImportMenu = false },
                     scrollState = importMenuScrollState,
-                    containerColor = Color.Transparent,
+                    containerColor = Color(0xFF1C1733),
                     modifier = Modifier
                         .heightIn(max = maxMenuHeight)
                         .verticalScrollbar(importMenuScrollState)
@@ -103,7 +103,7 @@ fun MainTopBar(
                     expanded = showMenu,
                     onDismissRequest = { showMenu = false },
                     scrollState = moreMenuScrollState,
-                    containerColor = Color.Transparent,
+                    containerColor = Color(0xFF1C1733),
                     modifier = Modifier
                         .heightIn(max = maxMenuHeight)
                         .verticalScrollbar(moreMenuScrollState)
