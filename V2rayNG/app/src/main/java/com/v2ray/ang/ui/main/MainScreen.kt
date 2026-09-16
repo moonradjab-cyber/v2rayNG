@@ -346,16 +346,9 @@ fun MainScreen(
                                 contentScale = ContentScale.FillBounds,
                                 alpha = 0.5f
                             )
-                            PullToRefreshBox(
-                                isRefreshing = isLoading,
-                                onRefresh = { onAction(MainAction.UpdateSubscriptions) },
+                            Column(
                                 modifier = Modifier.fillMaxSize()
                             ) {
-                                Column(
-                                    modifier = Modifier
-                                        .fillMaxSize()
-                                        .verticalScroll(rememberScrollState())
-                                ) {
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -438,6 +431,18 @@ fun MainScreen(
                                 onStatusClick = { onAction(MainAction.TestCurrentServer) }
                             )
 
+                            PullToRefreshBox(
+                                isRefreshing = isLoading,
+                                onRefresh = { onAction(MainAction.UpdateSubscriptions) },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .weight(1f)
+                            ) {
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .verticalScroll(rememberScrollState())
+                                ) {
                             val currentGroup = serverGroups.getOrNull(pagerState.currentPage)
                             val renewUrl = currentGroup?.let { MmkvManager.decodeSubscription(it.id)?.url }
                             if (currentGroup != null && !renewUrl.isNullOrEmpty()) {
@@ -596,6 +601,7 @@ fun MainScreen(
                                 )
                             }
                             Spacer(modifier = Modifier.height(16.dp))
+                        }
                         }
                         }
                         }
