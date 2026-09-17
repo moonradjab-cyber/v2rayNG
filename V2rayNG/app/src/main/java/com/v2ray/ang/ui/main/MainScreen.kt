@@ -81,6 +81,7 @@ import android.content.Intent
 import android.net.Uri
 import androidx.compose.ui.platform.LocalContext
 import com.v2ray.ang.handler.MmkvManager
+import com.v2ray.ang.handler.SpeedState
 import com.v2ray.ang.handler.MmkvManager.rememberMmkvBool
 import com.v2ray.ang.handler.FailoverMonitor
 import com.v2ray.ang.ui.compose.LocalDarkTheme
@@ -449,6 +450,29 @@ fun MainScreen(
                                 onToggle = { onAction(MainAction.ToggleService) },
                                 onStatusClick = { onAction(MainAction.TestCurrentServer) }
                             )
+
+                            if (isRunning) {
+                                val speed by SpeedState.speed.collectAsStateWithLifecycle()
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(top = 6.dp),
+                                    horizontalArrangement = Arrangement.Center,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = "↓ ${formatSpeed(speed.first)}",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
+                                    Spacer(modifier = Modifier.width(18.dp))
+                                    Text(
+                                        text = "↑ ${formatSpeed(speed.second)}",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
 
                             PullToRefreshBox(
                                 isRefreshing = isLoading,
@@ -1034,6 +1058,15 @@ private fun BrandTitle(isRunning: Boolean, modifier: Modifier = Modifier) {
         fontWeight = FontWeight.Bold,
         modifier = modifier
     )
+}
+
+private fun formatSpeed(bytesPerSec: Long): String {
+    val kb = bytesPerSec / 1024.0
+    return if (kb >= 1024.0) {
+        String.format("%.1f МБ/с", kb / 1024.0)
+    } else {
+        String.format("%.0f КБ/с", kb)
+    }
 }
 
 private fun formatTraffic(used: Long, total: Long): String {
