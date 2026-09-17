@@ -100,7 +100,12 @@ jobs:
         chmod 755 gradlew
         ./gradlew licenseFdroidReleaseReport
         ./gradlew assembleRelease -Pandroid.injected.signing.store.file=${{ steps.android_keystore.outputs.filePath }} -Pandroid.injected.signing.store.password=${{ secrets.APP_KEYSTORE_PASSWORD }} -Pandroid.injected.signing.key.alias=${{ secrets.APP_KEYSTORE_ALIAS }} -Pandroid.injected.signing.key.password=${{ secrets.APP_KEY_PASSWORD }}
-    
+
+    - name: Build AAB (Google Play)
+      run: |
+        cd ${{ github.workspace }}/V2rayNG
+        ./gradlew bundlePlaystoreRelease -Pandroid.injected.signing.store.file=${{ steps.android_keystore.outputs.filePath }} -Pandroid.injected.signing.store.password=${{ secrets.APP_KEYSTORE_PASSWORD }} -Pandroid.injected.signing.key.alias=${{ secrets.APP_KEYSTORE_ALIAS }} -Pandroid.injected.signing.key.password=${{ secrets.APP_KEY_PASSWORD }}
+
     - name: Upload arm64-v8a APK
       uses: actions/upload-artifact@v7
       if: ${{  success() }}
@@ -128,6 +133,13 @@ jobs:
       with:
         name: universal-apk
         path: ${{ github.workspace }}/V2rayNG/app/build/outputs/apk/*/release/*universal*.apk
+
+    - name: Upload AAB (Google Play)
+      uses: actions/upload-artifact@v7
+      if: ${{ success() }}
+      with:
+        name: playstore-aab
+        path: ${{ github.workspace }}/V2rayNG/app/build/outputs/bundle/playstoreRelease/*.aab
 
   sign-and-release:
     needs: build
