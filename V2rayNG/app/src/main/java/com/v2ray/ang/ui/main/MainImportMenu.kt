@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.dp
 import com.v2ray.ang.R
 import com.v2ray.ang.dto.entities.ProfileItem
 import com.v2ray.ang.enums.EConfigType
+import com.v2ray.ang.handler.MmkvManager
 import com.v2ray.ang.extension.isComplexType
 import com.v2ray.ang.ui.compose.AppDropdownMenuItems
 import com.v2ray.ang.ui.compose.SelectListDialog
@@ -63,6 +64,7 @@ internal enum class ServerMenuAction(
     ShareClipboard(R.string.share_method_clipboard, isShareAction = true, supportsComplexProfiles = false),
     ShareFullContent(R.string.share_method_full_content, isShareAction = true, supportsComplexProfiles = true),
     Edit(R.string.action_edit, isShareAction = false, supportsComplexProfiles = true),
+    Pin(R.string.action_edit, isShareAction = false, supportsComplexProfiles = true),
     Delete(R.string.action_delete, isShareAction = false, supportsComplexProfiles = true),
 }
 
@@ -73,7 +75,7 @@ internal fun serverMenuActions(
     (includeManagementActions || action.isShareAction) && (!isComplexProfile || action.supportsComplexProfiles)
 }
 
-private fun ServerMenuAction.requiresPassword(): Boolean = this != ServerMenuAction.Delete
+private fun ServerMenuAction.requiresPassword(): Boolean = this != ServerMenuAction.Delete && this != ServerMenuAction.Pin
 
 @Composable
 fun ImportMenuContent(onAction: (MainAction) -> Unit) = AppDropdownMenuItems(
@@ -118,6 +120,7 @@ fun ShareMethodDialog(
             ServerMenuAction.ShareClipboard -> onAction(MainAction.ShareClipboard(guid))
             ServerMenuAction.ShareFullContent -> onAction(MainAction.ShareFullContent(guid))
             ServerMenuAction.Edit -> onAction(MainAction.EditServer(guid, profile))
+            ServerMenuAction.Pin -> onAction(MainAction.TogglePin(guid))
             ServerMenuAction.Delete -> onRemove(guid)
         }
     }
@@ -137,7 +140,15 @@ fun ShareMethodDialog(
     } else {
         SelectListDialog(
             options = menuActions,
-            optionText = { stringResource(it.labelRes) },
+            optionText = { action ->
+                if (action == ServerMenuAction.Pin) {
+                    val pinned = MmkvManager.decodeSettingsStringSet("pref_pinned_servers")
+                        ?.contains(guid) == true
+                    if (pinned) "Открепить" else "Закрепить наверх"
+                } else {
+                    stringResource(action.labelRes)
+                }
+            },
             onSelected = { action ->
                 if (action.requiresPassword()) {
                     pending = action

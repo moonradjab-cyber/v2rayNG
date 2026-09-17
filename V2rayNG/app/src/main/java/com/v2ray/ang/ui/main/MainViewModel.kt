@@ -218,6 +218,7 @@ class MainViewModel(
             is MainAction.SelectGroup -> subscriptionIdChanged(action.groupId)
             is MainAction.SelectServer -> updateSelectedGuid(action.guid)
             is MainAction.RemoveServer -> removeServerAndRefresh(action.guid)
+            is MainAction.TogglePin -> togglePin(action.guid)
             is MainAction.Search -> filterConfig(action.query)
             is MainAction.ImportBatchConfig -> importBatchConfig(action.configText)
             MainAction.LocateHandled -> consumeLocateTarget()
@@ -325,7 +326,18 @@ class MainViewModel(
         )
     }
 
+    fun togglePin(guid: String) {
+        viewModelScope.launch(ioDispatcher) {
+            val set = MmkvManager.decodeSettingsStringSet("pref_pinned_servers") ?: mutableSetOf()
+            if (!set.add(guid)) set.remove(guid)
+            MmkvManager.encodeSettings("pref_pinned_servers", set)
+            cacheMutex.withLock { groupDataCache.clear() }
+            setupGroupTab(forceRefresh = true)
+        }
+    }
+
     private fun buildServerRows(groupId: String, servers: List<ServersCache>): List<ServerRowUiModel> {
+        val pinned = MmkvManager.decodeSettingsStringSet("pref_pinned_servers") ?: emptySet()
         val subscriptionRemarks = if (groupId.isEmpty()) {
             servers.asSequence()
                 .map { it.profile.subscriptionId }
@@ -337,12 +349,15 @@ class MainViewModel(
         } else {
             emptyMap()
         }
-        return servers.map { server ->
-            buildServerRowUiModel(
-                server = server,
-                subscriptionRemarks = subscriptionRemarks[server.profile.subscriptionId].orEmpty()
-            )
-        }
+        return servers
+            .sortedByDescending { it.guid in pinned }
+            .map { server ->
+                val row = buildServerRowUiModel(
+                    server = server,
+                    subscriptionRemarks = subscriptionRemarks[server.profile.subscriptionId].orEmpty()
+                )
+                if (server.guid in pinned) row.copy(remarks = "★ ${row.remarks}") else row
+            }
     }
 
     fun getSubscriptions(): List<SubscriptionCache> = dataSource.getSubscriptions()
