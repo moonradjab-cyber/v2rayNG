@@ -99,7 +99,7 @@ class MainActivity : HelperBaseComponentActivity() {
         checkAndRequestPermission(PermissionType.POST_NOTIFICATIONS) {}
 
         if (savedInstanceState == null &&
-            MmkvManager.decodeSettingsBool("pref_auto_connect", true)
+            MmkvManager.decodeSettingsBool("pref_auto_connect", false)
         ) {
             lifecycleScope.launch {
                 repeat(10) {
