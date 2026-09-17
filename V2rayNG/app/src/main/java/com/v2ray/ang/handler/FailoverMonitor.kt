@@ -11,32 +11,29 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import java.net.HttpURLConnection
-import java.net.URL
 
 /**
- * Optional server failover. While the VPN is connected, periodically probes internet
- * reachability (traffic goes through the active server). If the current server stops
- * responding [FAIL_THRESHOLD] times in a row, switches to the next server in the same
- * group and restarts the tunnel.
+ * "Auto" server mode. While enabled (pref_auto_failover) and the VPN is connected,
+ * periodically measures the real ping of the active server. If the server is
+ * unreachable (ping < 0) or too slow (ping > [PING_THRESHOLD_MS]) for a few checks
+ * in a row, switches to the next server in the same group and restarts the tunnel.
  *
- * Gated behind the "pref_auto_failover" setting so it can be turned off if it misbehaves
- * on a given device/ROM. Started/stopped together with the core service.
+ * Enabled by the "Авто" item in the server list (and the settings toggle). Off by default.
  */
 object FailoverMonitor {
 
     private const val PREF_KEY = "pref_auto_failover"
     private const val CHECK_INTERVAL_MS = 25_000L
     private const val SETTLE_DELAY_MS = 40_000L
-    private const val FAIL_THRESHOLD = 3
-    private const val TEST_URL = "http://cp.cloudflare.com/generate_204"
-    private const val TIMEOUT_MS = 6000
+    private const val FAIL_THRESHOLD = 2
+    private const val PING_THRESHOLD_MS = 500L
 
     @Volatile
     private var job: Job? = null
 
     fun start(context: Context) {
-        if (MmkvManager.decodeSettingsBool(PREF_KEY, true) != true) return
+        if (MmkvManager.decodeSettingsBool(PREF_KEY, false) != true) return
+        if (!CoreServiceManager.isRunning()) return
         if (job != null) return
         val appContext = context.applicationContext
         job = CoroutineScope(Dispatchers.IO).launch {
@@ -44,13 +41,17 @@ object FailoverMonitor {
             delay(SETTLE_DELAY_MS)
             var fails = 0
             while (isActive && CoreServiceManager.isRunning()) {
-                if (probe()) {
+                val ping = CoreServiceManager.measureCurrentDelay()
+                val bad = ping < 0L || ping > PING_THRESHOLD_MS
+                if (!bad) {
                     fails = 0
                 } else {
                     fails++
+                    LogUtil.i(AppConfig.TAG, "FailoverMonitor: bad ping=$ping ($fails/$FAIL_THRESHOLD)")
                     if (fails >= FAIL_THRESHOLD) {
                         if (switchToNextServer(appContext)) {
                             // Service is restarting; this loop is replaced by a fresh one.
+                            job = null
                             return@launch
                         }
                         fails = 0
@@ -58,31 +59,13 @@ object FailoverMonitor {
                 }
                 delay(CHECK_INTERVAL_MS)
             }
+            job = null
         }
     }
 
     fun stop() {
         job?.cancel()
         job = null
-    }
-
-    private fun probe(): Boolean {
-        var conn: HttpURLConnection? = null
-        return try {
-            conn = (URL(TEST_URL).openConnection() as HttpURLConnection).apply {
-                connectTimeout = TIMEOUT_MS
-                readTimeout = TIMEOUT_MS
-                instanceFollowRedirects = false
-                requestMethod = "GET"
-                useCaches = false
-            }
-            val code = conn.responseCode
-            code in 200..399
-        } catch (e: Exception) {
-            false
-        } finally {
-            conn?.disconnect()
-        }
     }
 
     private fun switchToNextServer(context: Context): Boolean {
@@ -96,7 +79,7 @@ object FailoverMonitor {
         if (next == currentGuid) return false
 
         MmkvManager.setSelectServer(next)
-        LogUtil.i(AppConfig.TAG, "FailoverMonitor: current server unreachable, switching to next")
+        LogUtil.i(AppConfig.TAG, "FailoverMonitor: switching to next server")
         LauncherManager.restartService(context)
         return true
     }

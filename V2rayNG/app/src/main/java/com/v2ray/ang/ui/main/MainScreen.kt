@@ -81,6 +81,8 @@ import android.content.Intent
 import android.net.Uri
 import androidx.compose.ui.platform.LocalContext
 import com.v2ray.ang.handler.MmkvManager
+import com.v2ray.ang.handler.MmkvManager.rememberMmkvBool
+import com.v2ray.ang.handler.FailoverMonitor
 import com.v2ray.ang.ui.compose.LocalDarkTheme
 import com.v2ray.ang.ui.compose.QRCodeDialog
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -707,11 +709,53 @@ fun MainScreen(
                                 Spacer(modifier = Modifier.height(8.dp))
                             }
 
+                            var autoMode by rememberMmkvBool("pref_auto_failover", false)
+                            Surface(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 12.dp, vertical = 3.dp)
+                                    .clickable {
+                                        autoMode = true
+                                        FailoverMonitor.start(context)
+                                    },
+                                shape = RoundedCornerShape(12.dp),
+                                color = MaterialTheme.colorScheme.surfaceContainer,
+                                border = if (autoMode) BorderStroke(1.5.dp, MaterialTheme.colorScheme.primary) else null
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(
+                                        painterResource(R.drawable.ic_flash_on_24dp),
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.primary
+                                    )
+                                    Spacer(modifier = Modifier.width(10.dp))
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(
+                                            text = "Авто (лучший сервер)",
+                                            style = MaterialTheme.typography.bodyLarge,
+                                            color = MaterialTheme.colorScheme.onSurface
+                                        )
+                                        Text(
+                                            text = "Переключение при пинге выше 500 мс",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                }
+                            }
+
                             homeGroupState.rows.forEach { row ->
                                 ServerRowCompact(
                                     row = row,
-                                    isSelected = row.guid == selectedGuid,
-                                    onSelect = { onAction(MainAction.SelectServer(row.guid)) },
+                                    isSelected = !autoMode && row.guid == selectedGuid,
+                                    onSelect = {
+                                        autoMode = false
+                                        FailoverMonitor.stop()
+                                        onAction(MainAction.SelectServer(row.guid))
+                                    },
                                     onMore = { shareTarget = Triple(row.guid, row.profile, true) }
                                 )
                             }

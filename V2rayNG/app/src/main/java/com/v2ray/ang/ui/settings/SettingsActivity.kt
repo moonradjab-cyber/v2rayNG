@@ -115,7 +115,7 @@ fun SettingsScreen(
     var modeSettingsExpanded by rememberSaveable { mutableStateOf(true) }
 
     var autoConnect by rememberMmkvBool("pref_auto_connect", false)
-    var autoFailover by rememberMmkvBool("pref_auto_failover", true)
+    var autoFailover by rememberMmkvBool("pref_auto_failover", false)
     var localDns by rememberMmkvBool(AppConfig.PREF_LOCAL_DNS_ENABLED, false)
     var fakeDns by rememberMmkvBool(AppConfig.PREF_FAKE_DNS_ENABLED, false)
     var appendHttpProxy by rememberMmkvBool(AppConfig.PREF_APPEND_HTTP_PROXY, false)

@@ -315,6 +315,20 @@ object CoreServiceManager {
     }
 
     /**
+     * Measures the current connection delay (ms) through the active core.
+     * Returns -1 if not running or on failure. Blocking; call off the main thread.
+     */
+    fun measureCurrentDelay(): Long {
+        if (!isRunning() || isReloading) return -1L
+        return try {
+            coreController.measureDelay(SettingsManager.getDelayTestUrl())
+        } catch (e: Exception) {
+            LogUtil.e(AppConfig.TAG, "measureCurrentDelay failed", e)
+            -1L
+        }
+    }
+
+    /**
      * Measures the connection delay for the current V2Ray configuration.
      * Tests with primary URL first, then falls back to alternative URL if needed.
      * Also fetches remote IP information if the delay test was successful.
