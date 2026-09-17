@@ -149,6 +149,10 @@ object ThemeManager {
 @Composable
 fun resolveDarkTheme(): Boolean {
     val mode by ThemeManager.themeMode.collectAsState()
+    if (MmkvManager.decodeSettingsBool("pref_theme_schedule", false)) {
+        val hour = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY)
+        return hour >= 20 || hour < 7
+    }
     return when (mode) {
         "1" -> false
         "2" -> true

@@ -3,6 +3,8 @@ package com.v2ray.ang.ui.main
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.compose.foundation.Image
+import android.content.Intent
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.width
@@ -115,6 +117,24 @@ fun MainDrawerContent(drawerState: DrawerState, onNavigate: (MainDestination) ->
                     modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
                 )
             }
+
+            val context = LocalContext.current
+            NavigationDrawerItem(
+                label = { Text("Поделиться приложением") },
+                selected = false,
+                onClick = {
+                    val intent = Intent(Intent.ACTION_SEND).apply {
+                        type = "text/plain"
+                        putExtra(
+                            Intent.EXTRA_TEXT,
+                            "Пользуюсь Maxachkala VPN — быстро и удобно \uD83D\uDE80 Подписка в боте: https://t.me/maxachkalavpn_bot"
+                        )
+                    }
+                    runCatching { context.startActivity(Intent.createChooser(intent, "Поделиться")) }
+                },
+                icon = { Icon(painterResource(R.drawable.ic_share_24dp), contentDescription = null) },
+                modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+            )
 
             AppDivider()
 

@@ -116,6 +116,7 @@ fun SettingsScreen(
 
     var autoConnect by rememberMmkvBool("pref_auto_connect", false)
     var autoFailover by rememberMmkvBool("pref_auto_failover", false)
+    var themeSchedule by rememberMmkvBool("pref_theme_schedule", false)
     var localDns by rememberMmkvBool(AppConfig.PREF_LOCAL_DNS_ENABLED, false)
     var fakeDns by rememberMmkvBool(AppConfig.PREF_FAKE_DNS_ENABLED, false)
     var appendHttpProxy by rememberMmkvBool(AppConfig.PREF_APPEND_HTTP_PROXY, false)
@@ -254,6 +255,12 @@ fun SettingsScreen(
                     summary = "Если текущий сервер перестал отвечать — переключиться на следующий",
                     checked = autoFailover,
                     onCheckedChange = { autoFailover = it }
+                )
+                SettingsSwitchItem(
+                    title = "Тёмная тема по расписанию",
+                    summary = "Тёмная ночью (20:00–7:00), светлая днём. Применяется при следующем запуске.",
+                    checked = themeSchedule,
+                    onCheckedChange = { themeSchedule = it }
                 )
                 SettingsSwitchItem(
                     title = stringResource(R.string.title_pref_speed_enabled),
