@@ -451,7 +451,7 @@ fun MainScreen(
                                 onStatusClick = { onAction(MainAction.TestCurrentServer) }
                             )
 
-                            if (isRunning) {
+                            if (isRunning && MmkvManager.decodeSettingsBool("pref_speed_enabled", false)) {
                                 val speed by SpeedState.speed.collectAsStateWithLifecycle()
                                 Row(
                                     modifier = Modifier
