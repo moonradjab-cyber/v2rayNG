@@ -1,6 +1,7 @@
 package com.v2ray.ang.ui.main
 
 import android.content.Intent
+import android.net.Uri
 import android.net.VpnService
 import android.os.Build
 import android.os.Bundle
@@ -9,6 +10,10 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.lifecycleScope
 import com.v2ray.ang.AngApplication
 import com.v2ray.ang.AppConfig
@@ -132,6 +137,27 @@ class MainActivity : HelperBaseComponentActivity() {
     @Composable
     override fun ScreenContent() {
         BackHandler { moveTaskToBack(false) }
+
+        var showOnboarding by remember {
+            mutableStateOf(!MmkvManager.decodeSettingsBool("pref_onboarding_done", false))
+        }
+        if (showOnboarding) {
+            OnboardingScreen(
+                onOpenBot = {
+                    runCatching {
+                        startActivity(
+                            Intent(Intent.ACTION_VIEW, Uri.parse("https://t.me/maxachkalavpn_bot"))
+                        )
+                    }
+                },
+                onFinish = {
+                    MmkvManager.encodeSettings("pref_onboarding_done", true)
+                    showOnboarding = false
+                }
+            )
+            return
+        }
+
         MainScreen(
             mainViewModel = mainViewModel,
             onAction = { action ->
