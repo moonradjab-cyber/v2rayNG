@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.v2ray.ang.handler.MmkvManager
+import com.v2ray.ang.handler.SubscriptionUpdater
 import com.v2ray.ang.AppConfig
 import com.v2ray.ang.R
 import com.v2ray.ang.dto.ConnectionTestResult
@@ -730,14 +731,22 @@ class MainViewModel(
     }
 
     fun removeServerAndRefresh(guid: String) {
-        if (guid == uiState.value.selectedGuid) {
-            toast(R.string.toast_action_not_allowed)
-            return
-        }
         viewModelScope.launch(ioDispatcher) {
-            dataSource.removeServer(guid)
+            val subId = MmkvManager.decodeServerConfig(guid)?.subscriptionId
+            if (!subId.isNullOrEmpty()) {
+                // Delete the whole subscription (all its servers) at once.
+                MmkvManager.removeSubscription(subId)
+                SubscriptionUpdater.cancelOne(subId = subId)
+            } else {
+                if (guid == uiState.value.selectedGuid) {
+                    toast(R.string.toast_action_not_allowed)
+                    return@launch
+                }
+                dataSource.removeServer(guid)
+            }
             cacheMutex.withLock { groupDataCache.clear() }
             setupGroupTab(forceRefresh = true).join()
+            refreshSelectedGuid()
         }
     }
 

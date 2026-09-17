@@ -3,6 +3,16 @@ package com.v2ray.ang.ui.main
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.width
+import androidx.compose.material3.Switch
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import com.v2ray.ang.AppConfig
+import com.v2ray.ang.handler.MmkvManager.rememberMmkvBool
+import com.v2ray.ang.handler.MmkvManager.rememberMmkvString
+import com.v2ray.ang.ui.compose.ThemeManager
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -111,6 +121,57 @@ fun MainDrawerContent(drawerState: DrawerState, onNavigate: (MainDestination) ->
                     modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
                 )
             }
+
+            AppDivider()
+
+            var uiMode by rememberMmkvString(AppConfig.PREF_UI_MODE_NIGHT, "2")
+            DrawerToggleRow(
+                iconRes = R.drawable.ic_settings_24dp,
+                label = "Светлая тема",
+                checked = uiMode == "1",
+                onCheckedChange = {
+                    val mode = if (it) "1" else "2"
+                    uiMode = mode
+                    ThemeManager.setThemeMode(mode)
+                }
+            )
+
+            var autoConnect by rememberMmkvBool("pref_auto_connect", false)
+            DrawerToggleRow(
+                iconRes = R.drawable.ic_shield_24dp,
+                label = "Автоподключение",
+                checked = autoConnect,
+                onCheckedChange = { autoConnect = it }
+            )
         }
+    }
+}
+
+@Composable
+private fun DrawerToggleRow(
+    iconRes: Int,
+    label: String,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 20.dp, vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            painter = painterResource(iconRes),
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Spacer(modifier = Modifier.width(16.dp))
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.weight(1f)
+        )
+        Switch(checked = checked, onCheckedChange = onCheckedChange)
     }
 }

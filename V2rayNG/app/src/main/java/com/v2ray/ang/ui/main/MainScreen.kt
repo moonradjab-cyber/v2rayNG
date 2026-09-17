@@ -690,15 +690,10 @@ fun MainScreen(
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(start = 16.dp, end = 12.dp, top = 8.dp, bottom = 4.dp),
+                                    .padding(start = 16.dp, end = 12.dp, top = 2.dp, bottom = 2.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Text(
-                                    text = "Серверы",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.weight(1f)
-                                )
+                                Spacer(modifier = Modifier.weight(1f))
                                 Icon(
                                     painterResource(R.drawable.ic_refresh_24dp),
                                     contentDescription = "Обновить",
