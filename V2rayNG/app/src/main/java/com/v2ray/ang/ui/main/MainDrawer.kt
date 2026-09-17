@@ -64,10 +64,7 @@ private val primaryDrawerItems = listOf(
 )
 
 private val drawerItems = primaryDrawerItems + listOf(
-    MainDestination.Promotion,
-    MainDestination.Logcat,
     MainDestination.CheckUpdate,
-    MainDestination.BackupRestore,
     MainDestination.About
 )
 

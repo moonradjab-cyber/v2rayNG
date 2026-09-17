@@ -509,6 +509,26 @@ fun MainScreen(
                                                 color = MaterialTheme.colorScheme.onSurface,
                                                 modifier = Modifier.weight(1f)
                                             )
+                                            Icon(
+                                                painterResource(R.drawable.ic_refresh_24dp),
+                                                contentDescription = "Обновить",
+                                                tint = MaterialTheme.colorScheme.primary,
+                                                modifier = Modifier
+                                                    .clickable { onAction(MainAction.UpdateSubscriptions) }
+                                                    .padding(6.dp)
+                                                    .size(20.dp)
+                                            )
+                                            Spacer(modifier = Modifier.width(2.dp))
+                                            Icon(
+                                                painterResource(R.drawable.ic_flash_on_24dp),
+                                                contentDescription = "Проверить все",
+                                                tint = MaterialTheme.colorScheme.primary,
+                                                modifier = Modifier
+                                                    .clickable { onAction(MainAction.TestRealAllServers) }
+                                                    .padding(6.dp)
+                                                    .size(20.dp)
+                                            )
+                                            Spacer(modifier = Modifier.width(8.dp))
                                             Surface(
                                                 shape = RoundedCornerShape(99.dp),
                                                 color = MaterialTheme.colorScheme.secondaryContainer,
@@ -685,43 +705,6 @@ fun MainScreen(
                                     }
                                 }
                                 Spacer(modifier = Modifier.height(8.dp))
-                            }
-
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(start = 16.dp, end = 12.dp, top = 2.dp, bottom = 2.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Spacer(modifier = Modifier.weight(1f))
-                                Icon(
-                                    painterResource(R.drawable.ic_refresh_24dp),
-                                    contentDescription = "Обновить",
-                                    tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier
-                                        .clickable { onAction(MainAction.UpdateSubscriptions) }
-                                        .padding(8.dp)
-                                        .size(20.dp)
-                                )
-                                Row(
-                                    modifier = Modifier
-                                        .clickable { onAction(MainAction.TestRealAllServers) }
-                                        .padding(8.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Icon(
-                                        painterResource(R.drawable.ic_flash_on_24dp),
-                                        contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.primary,
-                                        modifier = Modifier.size(18.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(6.dp))
-                                    Text(
-                                        text = "Проверить все",
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.primary
-                                    )
-                                }
                             }
 
                             homeGroupState.rows.forEach { row ->
