@@ -28,6 +28,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
@@ -306,10 +307,14 @@ fun MainScreen(
                                 .fillMaxSize()
                                 .background(
                                     Brush.verticalGradient(
-                                        listOf(
+                                        if (isDarkTheme) listOf(
                                             Color(0xFF1A1636),
                                             Color(0xFF141029),
                                             Color(0xFF0A0814)
+                                        ) else listOf(
+                                            Color(0xFFEFEBFF),
+                                            Color(0xFFF6F4FF),
+                                            Color(0xFFFFFFFF)
                                         )
                                     )
                                 )
@@ -353,7 +358,7 @@ fun MainScreen(
                                     .scale(1.15f)
                                     .offset(x = bgDrift.dp),
                                 contentScale = ContentScale.FillBounds,
-                                alpha = 0.5f
+                                alpha = if (isDarkTheme) 0.5f else 0.12f
                             )
                             Column(
                                 modifier = Modifier.fillMaxSize()
@@ -592,6 +597,83 @@ fun MainScreen(
                                             }
                                         }
 
+                                        val expireSec = subInfo?.expireEpochSec ?: 0L
+                                        if (expireSec > 0L) {
+                                            val daysLeft = (expireSec - System.currentTimeMillis() / 1000L) / 86400L
+                                            if (daysLeft < 0L) {
+                                                Spacer(modifier = Modifier.height(12.dp))
+                                                Surface(
+                                                    modifier = Modifier.fillMaxWidth(),
+                                                    shape = RoundedCornerShape(12.dp),
+                                                    color = MaterialTheme.colorScheme.errorContainer
+                                                ) {
+                                                    Column(modifier = Modifier.padding(14.dp)) {
+                                                        Text(
+                                                            text = "Подписка истекла",
+                                                            style = MaterialTheme.typography.titleSmall,
+                                                            fontWeight = FontWeight.Bold,
+                                                            color = MaterialTheme.colorScheme.onErrorContainer
+                                                        )
+                                                        Spacer(modifier = Modifier.height(10.dp))
+                                                        Surface(
+                                                            modifier = Modifier
+                                                                .fillMaxWidth()
+                                                                .clickable {
+                                                                    runCatching {
+                                                                        context.startActivity(
+                                                                            Intent(
+                                                                                Intent.ACTION_VIEW,
+                                                                                Uri.parse("https://t.me/maxachkalavpn_bot")
+                                                                            )
+                                                                        )
+                                                                    }
+                                                                },
+                                                            shape = RoundedCornerShape(10.dp),
+                                                            color = MaterialTheme.colorScheme.primary
+                                                        ) {
+                                                            Row(
+                                                                modifier = Modifier.padding(vertical = 12.dp),
+                                                                horizontalArrangement = Arrangement.Center,
+                                                                verticalAlignment = Alignment.CenterVertically
+                                                            ) {
+                                                                Icon(
+                                                                    painter = painterResource(R.drawable.ic_telegram_24dp),
+                                                                    contentDescription = null,
+                                                                    tint = MaterialTheme.colorScheme.onPrimary
+                                                                )
+                                                                Spacer(modifier = Modifier.width(8.dp))
+                                                                Text(
+                                                                    text = "Продлить в боте",
+                                                                    style = MaterialTheme.typography.titleSmall,
+                                                                    color = MaterialTheme.colorScheme.onPrimary
+                                                                )
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            } else if (daysLeft <= 3L) {
+                                                Spacer(modifier = Modifier.height(10.dp))
+                                                Row(
+                                                    modifier = Modifier.fillMaxWidth(),
+                                                    verticalAlignment = Alignment.CenterVertically
+                                                ) {
+                                                    Icon(
+                                                        painter = painterResource(R.drawable.ic_flash_on_24dp),
+                                                        contentDescription = null,
+                                                        tint = MaterialTheme.colorScheme.error,
+                                                        modifier = Modifier.size(18.dp)
+                                                    )
+                                                    Spacer(modifier = Modifier.width(8.dp))
+                                                    Text(
+                                                        text = if (daysLeft == 0L) "Подписка истекает сегодня — продлите заранее"
+                                                        else "Подписка истекает через $daysLeft дн. — продлите заранее",
+                                                        style = MaterialTheme.typography.bodySmall,
+                                                        color = MaterialTheme.colorScheme.error
+                                                    )
+                                                }
+                                            }
+                                        }
+
                                         val announce = subInfo?.announce
                                         Spacer(modifier = Modifier.height(10.dp))
                                         Text(
@@ -668,6 +750,10 @@ fun MainScreen(
                             onAction(MainAction.SelectGroup(id))
                             selectedTab = HomeTab.Home
                         },
+                        onSelectServer = { guid ->
+                            onAction(MainAction.SelectServer(guid))
+                            selectedTab = HomeTab.Home
+                        },
                         onManage = { onNavigate(MainDestination.Subscriptions) }
                     )
 
@@ -682,6 +768,7 @@ fun MainScreen(
 private fun ProvidersContent(
     groups: List<GroupMapItem>,
     onOpenGroup: (String) -> Unit,
+    onSelectServer: (String) -> Unit,
     onManage: () -> Unit,
 ) {
     Column(
@@ -694,7 +781,7 @@ private fun ProvidersContent(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "Провайдеры",
+                text = "Сервера",
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onBackground,
@@ -741,46 +828,75 @@ private fun ProvidersContent(
 
         val shownGroups = groups.filter { MmkvManager.decodeServerList(it.id).isNotEmpty() }
         LazyColumn(modifier = Modifier.fillMaxSize()) {
-            items(shownGroups) { group ->
-                val count = MmkvManager.decodeServerList(group.id).size
-                Surface(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 6.dp)
-                        .clickable { onOpenGroup(group.id) },
-                    shape = RoundedCornerShape(16.dp),
-                    color = MaterialTheme.colorScheme.surfaceContainer
-                ) {
-                    Row(
-                        modifier = Modifier.padding(16.dp),
-                        verticalAlignment = Alignment.CenterVertically
+            shownGroups.forEach { group ->
+                val guids = MmkvManager.decodeServerList(group.id)
+                item(key = "grp_${group.id}") {
+                    Surface(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 6.dp)
+                            .clickable { onOpenGroup(group.id) },
+                        shape = RoundedCornerShape(16.dp),
+                        color = MaterialTheme.colorScheme.surfaceContainer
                     ) {
-                        Icon(
-                            painter = painterResource(R.drawable.ic_subscriptions_24dp),
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.secondary
-                        )
-                        Spacer(modifier = Modifier.width(16.dp))
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = if (group.id.isEmpty()) "Default" else group.remarks,
-                                style = MaterialTheme.typography.titleMedium,
-                                color = MaterialTheme.colorScheme.onSurface
+                        Row(
+                            modifier = Modifier.padding(16.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                painter = painterResource(R.drawable.ic_subscriptions_24dp),
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.secondary
                             )
-                            Text(
-                                text = "$count серверов",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            Spacer(modifier = Modifier.width(16.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = if (group.id.isEmpty()) "Default" else group.remarks,
+                                    style = MaterialTheme.typography.titleMedium,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                                Text(
+                                    text = "${guids.size} серверов",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                            Icon(
+                                painter = painterResource(R.drawable.ic_settings_24dp),
+                                contentDescription = "Настроить",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.clickable { onManage() }
                             )
                         }
-                        Icon(
-                            painter = painterResource(R.drawable.ic_settings_24dp),
-                            contentDescription = "Настроить",
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.clickable { onManage() }
+                    }
+                }
+                itemsIndexed(guids, key = { _, guid -> "srv_$guid" }) { index, guid ->
+                    val name = remember(guid) { MmkvManager.decodeServerConfig(guid)?.remarks ?: guid }
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(start = 12.dp, top = 3.dp, bottom = 3.dp)
+                            .clip(RoundedCornerShape(10.dp))
+                            .clickable { onSelectServer(guid) }
+                            .padding(horizontal = 12.dp, vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "${index + 1}.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.width(26.dp)
+                        )
+                        Text(
+                            text = name,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            maxLines = 1,
+                            modifier = Modifier.weight(1f)
                         )
                     }
                 }
+                item(key = "spc_${group.id}") { Spacer(modifier = Modifier.height(14.dp)) }
             }
         }
     }

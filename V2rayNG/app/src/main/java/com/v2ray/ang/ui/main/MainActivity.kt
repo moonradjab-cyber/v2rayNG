@@ -21,9 +21,11 @@ import com.v2ray.ang.extension.toast
 import com.v2ray.ang.extension.toastError
 import com.v2ray.ang.extension.toastSuccess
 import com.v2ray.ang.handler.AngConfigManager
+import com.v2ray.ang.handler.ExpiryNotifier
 import com.v2ray.ang.handler.MmkvManager
 import com.v2ray.ang.handler.SettingsChangeManager
 import com.v2ray.ang.handler.SettingsManager
+import com.v2ray.ang.handler.SubscriptionUpdater
 import com.v2ray.ang.ui.AboutActivity
 import com.v2ray.ang.ui.backup.BackupActivity
 import com.v2ray.ang.ui.base.HelperBaseComponentActivity
@@ -95,6 +97,36 @@ class MainActivity : HelperBaseComponentActivity() {
         mainViewModel.onAction(MainAction.Initialize)
 
         checkAndRequestPermission(PermissionType.POST_NOTIFICATIONS) {}
+
+        if (savedInstanceState == null &&
+            MmkvManager.decodeSettingsBool("pref_auto_connect", true)
+        ) {
+            lifecycleScope.launch {
+                repeat(10) {
+                    if (mainViewModel.uiState.value.isRunning) return@launch
+                    if (!mainViewModel.uiState.value.selectedGuid.isNullOrEmpty()) {
+                        requestServiceStart()
+                        return@launch
+                    }
+                    kotlinx.coroutines.delay(300)
+                }
+            }
+        }
+
+        lifecycleScope.launch(Dispatchers.IO) {
+            var changed = false
+            MmkvManager.decodeSubscriptions().forEach { sub ->
+                val item = sub.subscription
+                if (item.url.isNotEmpty() && (!item.autoUpdate || item.updateInterval != 60L)) {
+                    item.autoUpdate = true
+                    item.updateInterval = 60L
+                    MmkvManager.encodeSubscription(sub.guid, item)
+                    changed = true
+                }
+            }
+            if (changed) SubscriptionUpdater.sync(this@MainActivity, forceReschedule = true)
+            ExpiryNotifier.schedule(this@MainActivity)
+        }
     }
 
     @Composable

@@ -29,6 +29,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.v2ray.ang.R
 import com.v2ray.ang.ui.compose.AppDivider
+import com.v2ray.ang.ui.compose.LocalDarkTheme
 import com.v2ray.ang.ui.compose.verticalScrollbar
 
 enum class MainDestination(@DrawableRes val iconRes: Int, @StringRes val labelRes: Int) {
@@ -67,7 +68,7 @@ fun MainDrawerContent(drawerState: DrawerState, onNavigate: (MainDestination) ->
     ModalDrawerSheet(
         drawerState = drawerState,
         modifier = Modifier.fillMaxWidth(0.75f),
-        drawerContainerColor = Color(0xFF1C1733)
+        drawerContainerColor = if (LocalDarkTheme.current) Color(0xFF1C1733) else MaterialTheme.colorScheme.surface
     ) {
         Column(
             modifier = Modifier
@@ -78,7 +79,7 @@ fun MainDrawerContent(drawerState: DrawerState, onNavigate: (MainDestination) ->
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(180.dp),
-                color = Color(0xFF1C1733)
+                color = if (LocalDarkTheme.current) Color(0xFF1C1733) else MaterialTheme.colorScheme.surface
             ) {
                 Column(
                     modifier = Modifier

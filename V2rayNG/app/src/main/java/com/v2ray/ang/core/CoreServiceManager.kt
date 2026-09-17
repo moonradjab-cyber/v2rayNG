@@ -27,6 +27,7 @@ import com.v2ray.ang.handler.SpeedtestManager
 import com.v2ray.ang.helper.MessageHelper
 import com.v2ray.ang.service.DialerNativeService
 import com.v2ray.ang.service.DialerWebviewService
+import com.v2ray.ang.handler.FailoverMonitor
 import com.v2ray.ang.service.NetworkMonitor
 import com.v2ray.ang.util.LogUtil
 import com.v2ray.ang.util.Utils
@@ -123,6 +124,7 @@ object CoreServiceManager {
         currentVpnInterface = vpnInterface
         launchCore(service, vpnInterface)
         startNetworkMonitor(service)
+        FailoverMonitor.start(service)
     }
 
     @Throws(Exception::class)
@@ -193,6 +195,7 @@ object CoreServiceManager {
         connectionTestScope.coroutineContext.cancelChildren()
         val service = getService() ?: return false
 
+        FailoverMonitor.stop()
         networkMonitor?.unregister()
         networkMonitor = null
         currentVpnInterface = null

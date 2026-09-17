@@ -114,6 +114,8 @@ fun SettingsScreen(
     var advancedSettingsExpanded by rememberSaveable { mutableStateOf(true) }
     var modeSettingsExpanded by rememberSaveable { mutableStateOf(true) }
 
+    var autoConnect by rememberMmkvBool("pref_auto_connect", true)
+    var autoFailover by rememberMmkvBool("pref_auto_failover", true)
     var localDns by rememberMmkvBool(AppConfig.PREF_LOCAL_DNS_ENABLED, false)
     var fakeDns by rememberMmkvBool(AppConfig.PREF_FAKE_DNS_ENABLED, false)
     var appendHttpProxy by rememberMmkvBool(AppConfig.PREF_APPEND_HTTP_PROXY, false)
@@ -241,6 +243,18 @@ fun SettingsScreen(
                 onExpandedChange = { uiSettingsExpanded = it }
             )
             if (uiSettingsExpanded) {
+                SettingsSwitchItem(
+                    title = "Автоподключение при запуске",
+                    summary = "Подключаться сразу при открытии приложения",
+                    checked = autoConnect,
+                    onCheckedChange = { autoConnect = it }
+                )
+                SettingsSwitchItem(
+                    title = "Автопереключение сервера",
+                    summary = "Если текущий сервер перестал отвечать — переключиться на следующий",
+                    checked = autoFailover,
+                    onCheckedChange = { autoFailover = it }
+                )
                 SettingsSwitchItem(
                     title = stringResource(R.string.title_pref_speed_enabled),
                     summary = stringResource(R.string.summary_pref_speed_enabled),

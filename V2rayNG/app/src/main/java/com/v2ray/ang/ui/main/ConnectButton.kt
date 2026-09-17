@@ -10,6 +10,8 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -106,6 +108,7 @@ fun ConnectButton(
     onToggle: () -> Unit,
     onStatusClick: () -> Unit
 ) {
+    val haptic = LocalHapticFeedback.current
     val transition = rememberInfiniteTransition(label = "connect")
     val angle1 by transition.animateFloat(
         0f, 360f,
@@ -221,11 +224,16 @@ fun ConnectButton(
                     .background(
                         if (isRunning) {
                             Brush.radialGradient(listOf(Color(0xFF7A83FF), Color(0xFF33276E)))
-                        } else {
+                        } else if (isDarkTheme) {
                             Brush.radialGradient(listOf(Color(0xFF241F40), Color(0xFF15122A)))
+                        } else {
+                            Brush.radialGradient(listOf(Color(0xFFEBE7FF), Color(0xFFD3CBF6)))
                         }
                     )
-                    .clickable(onClick = onToggle),
+                    .clickable {
+                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                        onToggle()
+                    },
                 contentAlignment = Alignment.Center
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -234,14 +242,14 @@ fun ConnectButton(
                         contentDescription = stringResource(
                             if (isRunning) R.string.acc_stop else R.string.acc_start
                         ),
-                        tint = Color.White,
+                        tint = if (isRunning || isDarkTheme) Color.White else Color(0xFF4A3F9E),
                         modifier = Modifier.size(36.dp)
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         text = statusWord,
                         style = MaterialTheme.typography.labelSmall,
-                        color = Color(0xFFEAE8FF),
+                        color = if (isRunning || isDarkTheme) Color(0xFFEAE8FF) else Color(0xFF4A3F9E),
                         fontWeight = FontWeight.SemiBold
                     )
                     if (isRunning) {

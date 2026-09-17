@@ -24,14 +24,40 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 private val LightColor = lightColorScheme(
-    primary = Color(0xFF7C6CF5),
+    primary = Color(0xFF6C5CE7),
     onPrimary = Color(0xFFFFFFFF),
-    secondary = Color(0xFF8A7CF7),
+    primaryContainer = Color(0xFFE7E3FF),
+    onPrimaryContainer = Color(0xFF1E1650),
+    secondary = Color(0xFF6F5FE0),
     onSecondary = Color(0xFFFFFFFF),
-    background = Color(0xFFFFFFFF),
-    onBackground = Color(0xFF1C1B1F),
+    secondaryContainer = Color(0xFFE9E6FF),
+    onSecondaryContainer = Color(0xFF241E5A),
+    tertiary = Color(0xFF1FA774),
+    onTertiary = Color(0xFFFFFFFF),
+    tertiaryContainer = Color(0xFFB9F2D8),
+    onTertiaryContainer = Color(0xFF002014),
+    error = Color(0xFFBA1A1A),
+    onError = Color(0xFFFFFFFF),
+    errorContainer = Color(0xFFFFDAD6),
+    onErrorContainer = Color(0xFF410002),
+    background = Color(0xFFF7F6FD),
+    onBackground = Color(0xFF1B1830),
     surface = Color(0xFFFFFFFF),
-    onSurface = Color(0xFF1C1B1F),
+    onSurface = Color(0xFF1B1830),
+    surfaceVariant = Color(0xFFE9E7F5),
+    onSurfaceVariant = Color(0xFF57536E),
+    outline = Color(0xFFC9C5DE),
+    outlineVariant = Color(0xFFE4E1F0),
+    inverseSurface = Color(0xFF302D45),
+    inverseOnSurface = Color(0xFFF3F0FF),
+    inversePrimary = Color(0xFFCEC9F6),
+    scrim = Color(0xFF000000),
+    surfaceTint = Color(0xFF6C5CE7),
+    surfaceContainerLowest = Color(0xFFFFFFFF),
+    surfaceContainerLow = Color(0xFFF5F3FC),
+    surfaceContainer = Color(0xFFF0EEFA),
+    surfaceContainerHigh = Color(0xFFEAE7F6),
+    surfaceContainerHighest = Color(0xFFE4E1F0),
 )
 
 // Happ-style dark purple palette
@@ -137,8 +163,7 @@ fun AppTheme(
     darkTheme: Boolean = resolveDarkTheme(),
     content: @Composable () -> Unit
 ) {
-    // Force the custom dark purple scheme everywhere (Happ style).
-    val colorScheme = DarkColor
+    val colorScheme = if (darkTheme) DarkColor else LightColor
     val snackbarController = rememberAppSnackbarController()
 
     val view = LocalView.current
@@ -147,14 +172,14 @@ fun AppTheme(
             val activity = view.context as? Activity ?: return@SideEffect
             val window = activity.window
             WindowCompat.getInsetsController(window, view).apply {
-                isAppearanceLightStatusBars = false
-                isAppearanceLightNavigationBars = false
+                isAppearanceLightStatusBars = !darkTheme
+                isAppearanceLightNavigationBars = !darkTheme
             }
         }
     }
 
     CompositionLocalProvider(
-        LocalDarkTheme provides true,
+        LocalDarkTheme provides darkTheme,
         LocalAppSnackbar provides snackbarController
     ) {
         MaterialTheme(
